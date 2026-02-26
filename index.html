@@ -318,6 +318,7 @@
             position: relative;
             border: 1px solid transparent;
             transition: box-shadow 0.2s;
+            touch-action: none; /* 允许移动端拖拽 */
         }
 
         .task-card:hover {
@@ -756,24 +757,106 @@
 
         /* 响应式 */
         @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            /* 移动端底部导航 */
+            .sidebar {
+                width: 100%;
+                height: 60px;
+                flex-direction: row;
+                padding: 0;
+                order: 2; /* 放在底部 */
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+                overflow-x: auto;
+                justify-content: space-around;
+                align-items: center;
+            }
+            
+            .sidebar-title, .spacer, .reset-btn-container {
+                display: none; /* 移动端隐藏标题和重置按钮 */
+            }
+            
+            .nav-btn {
+                margin: 0;
+                padding: 8px;
+                flex-direction: column;
+                font-size: 0.7rem;
+                border-radius: 8px;
+                min-width: 60px;
+                text-align: center;
+                gap: 4px;
+            }
+            
+            .nav-btn span {
+                font-size: 1.2rem;
+                margin-right: 0;
+            }
+
+            .main-content {
+                order: 1;
+                padding: 15px;
+                padding-bottom: 20px;
+                height: calc(100vh - 60px);
+            }
+
+            .grid-2x2 {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto;
+                min-height: auto;
+            }
+
             .logs-container {
                 flex-direction: column;
                 height: auto;
             }
             .logs-sidebar {
                 width: 100%;
-                max-height: 200px;
+                max-height: 150px;
+                margin-bottom: 15px;
             }
             .logs-header {
                 flex-direction: column;
                 gap: 15px;
                 align-items: flex-start;
             }
+            .logs-actions {
+                width: 100%;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .logs-actions button, .logs-actions .dropdown {
+                flex: 1;
+                min-width: 80px;
+            }
+            
+            .kiss-add-container {
+                flex-direction: column;
+            }
+            .kiss-add-container button {
+                width: 100%;
+            }
+            
+            .pomo-timer-card {
+                padding: 20px;
+            }
+            .pomo-time {
+                font-size: 4rem;
+            }
+            .pomo-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
         }
     </style>
     <!-- 引入 mammoth.js 用于解析 docx 文件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入 mobile-drag-drop polyfill 以支持移动端拖拽 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
+    <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
 </head>
 <body>
 
@@ -1160,6 +1243,17 @@
 
     let appData = {};
     let currentSyncCode = localStorage.getItem('efficiencySyncCode') || null;
+
+    // 初始化 mobile-drag-drop polyfill
+    MobileDragDrop.polyfill({
+        dragImageTranslateOverride: MobileDragDrop.scrollBehaviourDragImageTranslateOverride
+    });
+    // 仅在拖拽时阻止滚动
+    window.addEventListener('touchmove', function(e) {
+        if (document.querySelector('.dnd-poly-drag-image')) {
+            e.preventDefault();
+        }
+    }, {passive: false});
 
     // --- 主题切换 ---
     function toggleTheme() {
