@@ -591,6 +591,7 @@
             border-radius: 8px;
             margin-bottom: 20px;
             overflow: hidden;
+            flex-shrink: 0;
         }
         .methodology-header {
             padding: 12px 15px;
@@ -1014,7 +1015,7 @@
                     </div>
                     
                     <!-- 方法论折叠面板 -->
-                    <div class="methodology-panel">
+                    <div class="methodology-panel" style="display: block;">
                         <div class="methodology-header" onclick="toggleMethodology()">
                             <span>📘 月志方法论 (六步复盘法)</span>
                             <span id="methodology-icon">▼</span>
@@ -1029,7 +1030,7 @@
                         </div>
                     </div>
 
-                    <div class="logs-body">
+                    <div class="logs-body" style="flex-grow: 1; overflow-y: auto;">
                         <div class="log-field">
                             <label>📌 回顾目标：</label>
                             <textarea id="monthly-goal" placeholder="本月的主要目标是什么？完成度如何衡量？"></textarea>
@@ -2618,7 +2619,10 @@
         reviews.forEach(r => {
             const [year, month] = r.yearMonth.split('-');
             if (!treeData[year]) treeData[year] = [];
-            treeData[year].push({ month, date: r.yearMonth });
+            // Avoid duplicates
+            if (!treeData[year].some(item => item.date === r.yearMonth)) {
+                treeData[year].push({ month, date: r.yearMonth });
+            }
         });
         
         const treeContainer = document.getElementById('monthly-tree');
@@ -2644,6 +2648,12 @@
             yearNode.appendChild(childrenContainer);
             treeContainer.appendChild(yearNode);
         });
+        
+        // Re-apply active class
+        const currentYearMonthStr = formatYearMonth(currentMonthlyDate);
+        document.querySelectorAll('#monthly-tree .tree-leaf').forEach(el => el.classList.remove('active'));
+        const activeLeaf = document.querySelector(`#monthly-tree .tree-leaf[data-date="${currentYearMonthStr}"]`);
+        if (activeLeaf) activeLeaf.classList.add('active');
     }
 
     function toggleMethodology() {
