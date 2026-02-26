@@ -93,7 +93,7 @@
 
         /* 左侧导航 */
         .sidebar {
-            width: 240px;
+            width: 150px;
             background-color: var(--sidebar-bg);
             box-shadow: 2px 0 8px rgba(0,0,0,0.05);
             display: flex;
@@ -513,7 +513,7 @@
             gap: 20px;
         }
         .logs-sidebar {
-            width: 220px;
+            width: 180px;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
@@ -584,6 +584,36 @@
             font-weight: 600;
             margin-bottom: 8px;
             color: var(--text-main);
+        }
+        .methodology-panel {
+            background: var(--hover-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .methodology-header {
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+            color: var(--primary-color);
+            background: var(--active-bg);
+        }
+        .methodology-content {
+            padding: 15px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            border-top: 1px solid var(--border-color);
+        }
+        .methodology-content p {
+            margin: 0 0 8px 0;
+            line-height: 1.5;
+        }
+        .methodology-content p:last-child {
+            margin-bottom: 0;
         }
         .log-field textarea {
             width: 100%;
@@ -870,6 +900,9 @@
         <button class="nav-btn active" onclick="switchTab('logs')">
             <span>📔</span> 日志
         </button>
+        <button class="nav-btn" onclick="switchTab('monthly')">
+            <span>📅</span> 月志
+        </button>
         <button class="nav-btn" onclick="switchTab('kiss')">
             <span>🧩</span> KISS模型
         </button>
@@ -942,6 +975,84 @@
                         <div class="log-field">
                             <label>💭 今日思考：</label>
                             <textarea id="log-thoughts" placeholder="今天的感悟或灵感..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 月志视图 -->
+        <div id="monthly-view" class="view-section">
+            <div class="view-header">
+                <h2 class="view-title">月度复盘 (月志)</h2>
+            </div>
+            <div class="logs-container">
+                <div class="logs-sidebar">
+                    <h3>月志目录</h3>
+                    <div id="monthly-tree"></div>
+                </div>
+                <div class="logs-editor">
+                    <div class="logs-header">
+                        <div class="logs-date-nav">
+                            <button onclick="changeMonthlyDate(-1)">◀</button>
+                            <h2 id="current-monthly-date">加载中...</h2>
+                            <button onclick="changeMonthlyDate(1)">▶</button>
+                        </div>
+                        <div class="logs-actions">
+                            <button class="btn btn-primary" onclick="saveMonthly()">保存</button>
+                            <button class="btn btn-outline" style="color: #ff6b6b; border-color: #ff6b6b;" onclick="deleteMonthly()">删除</button>
+                            <div class="dropdown" onmouseenter="this.classList.add('open')" onmouseleave="this.classList.remove('open')" onclick="this.classList.toggle('open')">
+                                <button class="btn btn-outline dropdown-toggle">📤 导出/导入</button>
+                                <div class="dropdown-menu">
+                                    <a href="javascript:void(0)" onclick="exportMonthly(); event.stopPropagation();">导出为 Markdown</a>
+                                    <div style="border-top: 1px solid var(--border-color); margin: 5px 0;"></div>
+                                    <a href="javascript:void(0)" onclick="document.getElementById('import-monthly-file').click(); event.stopPropagation();">从 Markdown 导入</a>
+                                    <input type="file" id="import-monthly-file" style="display: none;" accept=".md" onchange="importMonthly(event)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 方法论折叠面板 -->
+                    <div class="methodology-panel">
+                        <div class="methodology-header" onclick="toggleMethodology()">
+                            <span>📘 月志方法论 (六步复盘法)</span>
+                            <span id="methodology-icon">▼</span>
+                        </div>
+                        <div class="methodology-content" id="methodology-content" style="display: none;">
+                            <p><strong>1. 回顾目标：</strong> 制定适配的阶段性目标，推荐使用SMART原则。聚焦1-2个主要目标。</p>
+                            <p><strong>2. 评估结果：</strong> 以主要目标的实际完成情况为主，多维度客观评价。</p>
+                            <p><strong>3. 分析原因（正向）：</strong> 尽可能用理性中立的视角分析，找到成功的本质原因。</p>
+                            <p><strong>4. 分析原因（负向）：</strong> 避免过度外部归因或过度内部归因，挖掘背后的根本原因。</p>
+                            <p><strong>5. 重来演练：</strong> 重点是下次做类似的事该怎么做，找到哪里需要调整，而不是凭空幻想。</p>
+                            <p><strong>6. 下月规划：</strong> 根据完成情况，评估是否要调整下月目标（继续/提升、调整方向、降低预期等）。</p>
+                        </div>
+                    </div>
+
+                    <div class="logs-body">
+                        <div class="log-field">
+                            <label>📌 回顾目标：</label>
+                            <textarea id="monthly-goal" placeholder="本月的主要目标是什么？完成度如何衡量？"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>📊 评估结果：</label>
+                            <textarea id="monthly-result" placeholder="客观完成情况、主观评分、他人反馈..."></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>✅ 分析原因（正向）：</label>
+                            <textarea id="monthly-good-reason" placeholder="做得好的原因是什么？有什么经验可以复用？"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>❌ 分析原因（负向）：</label>
+                            <textarea id="monthly-bad-reason" placeholder="未达预期的根本原因是什么？"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>🔄 重来演练：</label>
+                            <textarea id="monthly-rerun" placeholder="如果重来一次，我会怎么做？哪里需要调整？"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>📅 下月规划：</label>
+                            <textarea id="monthly-plan" placeholder="下个月的目标是什么？需要做哪些调整？"></textarea>
                         </div>
                     </div>
                 </div>
@@ -1285,6 +1396,7 @@
         initLogs();
         initRecycleBin();
         initPomodoro();
+        initMonthlyDB(); // 初始化月志DB
         const stored = localStorage.getItem('efficiencyAppData');
         if (stored) {
             try {
@@ -1319,11 +1431,19 @@
     function switchTab(tabId) {
         // 更新按钮状态
         document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        event.currentTarget.classList.add('active');
+        const btn = document.querySelector(`.nav-btn[onclick="switchTab('${tabId}')"]`);
+        if(btn) btn.classList.add('active');
 
         // 更新视图显示
         document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
         document.getElementById(`${tabId}-view`).classList.add('active');
+
+        if (tabId === 'logs') {
+            renderLogsTree();
+            loadLogData(formatDate(currentLogDate));
+        } else if (tabId === 'monthly') {
+            loadMonthlyView();
+        }
     }
 
     // --- 番茄钟逻辑 ---
@@ -2319,6 +2439,300 @@
     }
 
     // --- 页面加载完成执行 ---
+    // --- 月志系统 (IndexedDB) ---
+    const MONTHLY_DB_NAME = 'MonthlyReviewsDB';
+    const MONTHLY_DB_VERSION = 1;
+    const MONTHLY_STORE_NAME = 'reviews';
+    let monthlyDB = null;
+
+    function initMonthlyDB() {
+        return new Promise((resolve, reject) => {
+            if (monthlyDB) {
+                resolve(monthlyDB);
+                return;
+            }
+            const request = indexedDB.open(MONTHLY_DB_NAME, MONTHLY_DB_VERSION);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(MONTHLY_STORE_NAME)) {
+                    db.createObjectStore(MONTHLY_STORE_NAME, { keyPath: 'yearMonth' });
+                }
+            };
+            request.onsuccess = (event) => {
+                monthlyDB = event.target.result;
+                resolve(monthlyDB);
+            };
+            request.onerror = (event) => {
+                console.error("IndexedDB error:", event.target.error);
+                reject(event.target.error);
+            };
+        });
+    }
+
+    async function getMonthlyReview(yearMonth) {
+        const db = await initMonthlyDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([MONTHLY_STORE_NAME], 'readonly');
+            const store = transaction.objectStore(MONTHLY_STORE_NAME);
+            const request = store.get(yearMonth);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async function saveMonthlyReviewToDB(data) {
+        const db = await initMonthlyDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([MONTHLY_STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(MONTHLY_STORE_NAME);
+            const request = store.put(data);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async function deleteMonthlyReviewFromDB(yearMonth) {
+        const db = await initMonthlyDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([MONTHLY_STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(MONTHLY_STORE_NAME);
+            const request = store.delete(yearMonth);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async function getAllMonthlyReviews() {
+        const db = await initMonthlyDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([MONTHLY_STORE_NAME], 'readonly');
+            const store = transaction.objectStore(MONTHLY_STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // --- 月志 UI 逻辑 ---
+    let currentMonthlyDate = new Date();
+
+    function formatYearMonth(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function formatYearMonthDisplay(yearMonthStr) {
+        const [year, month] = yearMonthStr.split('-');
+        return `${year}年${month}月`;
+    }
+
+    async function loadMonthlyView() {
+        await initMonthlyDB();
+        await renderMonthlyTree();
+        await loadMonthlyData(formatYearMonth(currentMonthlyDate));
+    }
+
+    async function loadMonthlyData(yearMonthStr) {
+        const [year, month] = yearMonthStr.split('-');
+        currentMonthlyDate = new Date(year, parseInt(month) - 1, 1);
+        document.getElementById('current-monthly-date').innerText = formatYearMonthDisplay(yearMonthStr);
+        
+        const data = await getMonthlyReview(yearMonthStr);
+        if (data) {
+            document.getElementById('monthly-goal').value = data.goal || '';
+            document.getElementById('monthly-result').value = data.result || '';
+            document.getElementById('monthly-good-reason').value = data.goodReason || '';
+            document.getElementById('monthly-bad-reason').value = data.badReason || '';
+            document.getElementById('monthly-rerun').value = data.rerun || '';
+            document.getElementById('monthly-plan').value = data.plan || '';
+        } else {
+            document.getElementById('monthly-goal').value = '';
+            document.getElementById('monthly-result').value = '';
+            document.getElementById('monthly-good-reason').value = '';
+            document.getElementById('monthly-bad-reason').value = '';
+            document.getElementById('monthly-rerun').value = '';
+            document.getElementById('monthly-plan').value = '';
+        }
+        
+        // Update tree active state
+        document.querySelectorAll('#monthly-tree .tree-leaf').forEach(el => el.classList.remove('active'));
+        const activeLeaf = document.querySelector(`#monthly-tree .tree-leaf[data-date="${yearMonthStr}"]`);
+        if (activeLeaf) activeLeaf.classList.add('active');
+    }
+
+    async function changeMonthlyDate(offset) {
+        currentMonthlyDate.setMonth(currentMonthlyDate.getMonth() + offset);
+        await loadMonthlyData(formatYearMonth(currentMonthlyDate));
+    }
+
+    async function saveMonthly() {
+        const yearMonthStr = formatYearMonth(currentMonthlyDate);
+        const data = {
+            yearMonth: yearMonthStr,
+            goal: document.getElementById('monthly-goal').value,
+            result: document.getElementById('monthly-result').value,
+            goodReason: document.getElementById('monthly-good-reason').value,
+            badReason: document.getElementById('monthly-bad-reason').value,
+            rerun: document.getElementById('monthly-rerun').value,
+            plan: document.getElementById('monthly-plan').value,
+            timestamp: Date.now()
+        };
+        
+        try {
+            await saveMonthlyReviewToDB(data);
+            alert('保存成功！');
+            await renderMonthlyTree();
+            // re-apply active class
+            const activeLeaf = document.querySelector(`#monthly-tree .tree-leaf[data-date="${yearMonthStr}"]`);
+            if (activeLeaf) activeLeaf.classList.add('active');
+        } catch (e) {
+            alert('保存失败：' + e);
+        }
+    }
+
+    async function deleteMonthly() {
+        const yearMonthStr = formatYearMonth(currentMonthlyDate);
+        if (confirm(`确定要删除 ${formatYearMonthDisplay(yearMonthStr)} 的月志吗？`)) {
+            try {
+                await deleteMonthlyReviewFromDB(yearMonthStr);
+                alert('删除成功！');
+                
+                // Clear fields
+                document.getElementById('monthly-goal').value = '';
+                document.getElementById('monthly-result').value = '';
+                document.getElementById('monthly-good-reason').value = '';
+                document.getElementById('monthly-bad-reason').value = '';
+                document.getElementById('monthly-rerun').value = '';
+                document.getElementById('monthly-plan').value = '';
+                
+                await renderMonthlyTree();
+            } catch (e) {
+                alert('删除失败：' + e);
+            }
+        }
+    }
+
+    async function renderMonthlyTree() {
+        const reviews = await getAllMonthlyReviews();
+        const treeData = {};
+        
+        reviews.forEach(r => {
+            const [year, month] = r.yearMonth.split('-');
+            if (!treeData[year]) treeData[year] = [];
+            treeData[year].push({ month, date: r.yearMonth });
+        });
+        
+        const treeContainer = document.getElementById('monthly-tree');
+        treeContainer.innerHTML = '';
+        
+        Object.keys(treeData).sort((a, b) => b - a).forEach(year => {
+            const yearNode = document.createElement('div');
+            yearNode.className = 'tree-node';
+            yearNode.innerHTML = `<div class="tree-title" onclick="this.parentElement.classList.toggle('collapsed')">▶ ${year}年</div>`;
+            
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'tree-children';
+            
+            treeData[year].sort((a, b) => b.month - a.month).forEach(item => {
+                const leaf = document.createElement('div');
+                leaf.className = 'tree-leaf';
+                leaf.dataset.date = item.date;
+                leaf.innerText = `${item.month}月`;
+                leaf.onclick = () => loadMonthlyData(item.date);
+                childrenContainer.appendChild(leaf);
+            });
+            
+            yearNode.appendChild(childrenContainer);
+            treeContainer.appendChild(yearNode);
+        });
+    }
+
+    function toggleMethodology() {
+        const content = document.getElementById('methodology-content');
+        const icon = document.getElementById('methodology-icon');
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.innerText = '▲';
+        } else {
+            content.style.display = 'none';
+            icon.innerText = '▼';
+        }
+    }
+
+    function exportMonthly() {
+        const yearMonthStr = formatYearMonth(currentMonthlyDate);
+        const displayDate = formatYearMonthDisplay(yearMonthStr);
+        
+        const goal = document.getElementById('monthly-goal').value;
+        const result = document.getElementById('monthly-result').value;
+        const goodReason = document.getElementById('monthly-good-reason').value;
+        const badReason = document.getElementById('monthly-bad-reason').value;
+        const rerun = document.getElementById('monthly-rerun').value;
+        const plan = document.getElementById('monthly-plan').value;
+        
+        const mdContent = `# ${displayDate}复盘\n\n## 回顾目标\n${goal}\n\n## 评估结果\n${result}\n\n## 分析原因（正向）\n${goodReason}\n\n## 分析原因（负向）\n${badReason}\n\n## 重来演练\n${rerun}\n\n## 下月规划\n${plan}\n`;
+        
+        const blob = new Blob([mdContent], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `月志_${yearMonthStr}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importMonthly(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            try {
+                // Simple parsing based on headers
+                const sections = {
+                    '回顾目标': 'monthly-goal',
+                    '评估结果': 'monthly-result',
+                    '分析原因（正向）': 'monthly-good-reason',
+                    '分析原因（负向）': 'monthly-bad-reason',
+                    '重来演练': 'monthly-rerun',
+                    '下月规划': 'monthly-plan'
+                };
+                
+                let currentSection = null;
+                let sectionContent = [];
+                const parsedData = {};
+                
+                const lines = content.split('\n');
+                for (let line of lines) {
+                    if (line.startsWith('## ')) {
+                        if (currentSection) {
+                            parsedData[currentSection] = sectionContent.join('\n').trim();
+                        }
+                        currentSection = line.substring(3).trim();
+                        sectionContent = [];
+                    } else if (currentSection) {
+                        sectionContent.push(line);
+                    }
+                }
+                if (currentSection) {
+                    parsedData[currentSection] = sectionContent.join('\n').trim();
+                }
+                
+                for (const [header, id] of Object.entries(sections)) {
+                    if (parsedData[header] !== undefined) {
+                        document.getElementById(id).value = parsedData[header];
+                    }
+                }
+                alert('导入成功！请点击保存以持久化数据。');
+            } catch (error) {
+                alert('解析文件失败，请确保格式正确。');
+                console.error(error);
+            }
+            event.target.value = ''; // Reset input
+        };
+        reader.readAsText(file);
+    }
+
     window.onload = initData;
 
     // --- 日志系统 (IndexedDB) ---
