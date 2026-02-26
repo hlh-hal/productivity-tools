@@ -1441,7 +1441,7 @@
 
         if (tabId === 'logs') {
             renderLogsTree();
-            loadLogData(formatDate(currentLogDate));
+            loadLog(currentLogDate);
         } else if (tabId === 'monthly') {
             loadMonthlyView();
         }
@@ -2445,9 +2445,12 @@
     const MONTHLY_DB_VERSION = 1;
     const MONTHLY_STORE_NAME = 'reviews';
     let monthlyDB = null;
+    let monthlyDBPromise = null;
 
     function initMonthlyDB() {
-        return new Promise((resolve, reject) => {
+        if (monthlyDBPromise) return monthlyDBPromise;
+        
+        monthlyDBPromise = new Promise((resolve, reject) => {
             if (monthlyDB) {
                 resolve(monthlyDB);
                 return;
@@ -2468,6 +2471,7 @@
                 reject(event.target.error);
             };
         });
+        return monthlyDBPromise;
     }
 
     async function getMonthlyReview(yearMonth) {
@@ -2486,9 +2490,9 @@
         return new Promise((resolve, reject) => {
             const transaction = db.transaction([MONTHLY_STORE_NAME], 'readwrite');
             const store = transaction.objectStore(MONTHLY_STORE_NAME);
-            const request = store.put(data);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
+            store.put(data);
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
         });
     }
 
@@ -2497,9 +2501,9 @@
         return new Promise((resolve, reject) => {
             const transaction = db.transaction([MONTHLY_STORE_NAME], 'readwrite');
             const store = transaction.objectStore(MONTHLY_STORE_NAME);
-            const request = store.delete(yearMonth);
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
+            store.delete(yearMonth);
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
         });
     }
 
@@ -2628,15 +2632,15 @@
         const treeContainer = document.getElementById('monthly-tree');
         treeContainer.innerHTML = '';
         
-        Object.keys(treeData).sort((a, b) => b - a).forEach(year => {
+        Object.keys(treeData).sort((a, b) => parseInt(b) - parseInt(a)).forEach(year => {
             const yearNode = document.createElement('div');
             yearNode.className = 'tree-node';
-            yearNode.innerHTML = `<div class="tree-title" onclick="this.parentElement.classList.toggle('collapsed')">▶ ${year}年</div>`;
+            yearNode.innerHTML = `<div class="tree-title" onclick="this.parentElement.classList.toggle('collapsed')">${year}年</div>`;
             
             const childrenContainer = document.createElement('div');
             childrenContainer.className = 'tree-children';
             
-            treeData[year].sort((a, b) => b.month - a.month).forEach(item => {
+            treeData[year].sort((a, b) => parseInt(b.month) - parseInt(a.month)).forEach(item => {
                 const leaf = document.createElement('div');
                 leaf.className = 'tree-leaf';
                 leaf.dataset.date = item.date;
