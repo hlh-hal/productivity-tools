@@ -526,6 +526,39 @@
             color: var(--text-main);
             font-size: 1.1rem;
         }
+        .monthly-nav-selectors {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .selector-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .selector-group label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .selector-group select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+            cursor: pointer;
+        }
+        .selector-group select:focus {
+            border-color: var(--primary-color);
+        }
+        .selector-group select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
         .logs-editor {
             flex-grow: 1;
             display: flex;
@@ -989,8 +1022,17 @@
             </div>
             <div class="logs-container">
                 <div class="logs-sidebar">
-                    <h3>月志目录</h3>
-                    <div id="monthly-tree"></div>
+                    <h3>已存月志</h3>
+                    <div class="monthly-nav-selectors">
+                        <div class="selector-group">
+                            <label for="monthly-year-select">年份</label>
+                            <select id="monthly-year-select" onchange="onMonthlyYearChange()"></select>
+                        </div>
+                        <div class="selector-group">
+                            <label for="monthly-month-select">月份</label>
+                            <select id="monthly-month-select" onchange="onMonthlyMonthChange()"></select>
+                        </div>
+                    </div>
                 </div>
                 <div class="logs-editor">
                     <div class="logs-header">
@@ -2558,10 +2600,8 @@
             document.getElementById('monthly-plan').value = '';
         }
         
-        // Update tree active state
-        document.querySelectorAll('#monthly-tree .tree-leaf').forEach(el => el.classList.remove('active'));
-        const activeLeaf = document.querySelector(`#monthly-tree .tree-leaf[data-date="${yearMonthStr}"]`);
-        if (activeLeaf) activeLeaf.classList.add('active');
+        // Update dropdowns to match current date
+        await renderMonthlyTree();
     }
 
     async function changeMonthlyDate(offset) {
@@ -2586,9 +2626,6 @@
             await saveMonthlyReviewToDB(data);
             alert('保存成功！');
             await renderMonthlyTree();
-            // re-apply active class
-            const activeLeaf = document.querySelector(`#monthly-tree .tree-leaf[data-date="${yearMonthStr}"]`);
-            if (activeLeaf) activeLeaf.classList.add('active');
         } catch (e) {
             alert('保存失败：' + e);
         }
@@ -2616,48 +2653,98 @@
         }
     }
 
+    let monthlyNavData = {};
+
     async function renderMonthlyTree() {
         const reviews = await getAllMonthlyReviews();
-        const treeData = {};
+        monthlyNavData = {};
         
         reviews.forEach(r => {
             const [year, month] = r.yearMonth.split('-');
-            if (!treeData[year]) treeData[year] = [];
-            // Avoid duplicates
-            if (!treeData[year].some(item => item.date === r.yearMonth)) {
-                treeData[year].push({ month, date: r.yearMonth });
+            if (!monthlyNavData[year]) monthlyNavData[year] = [];
+            if (!monthlyNavData[year].includes(month)) {
+                monthlyNavData[year].push(month);
             }
         });
         
-        const treeContainer = document.getElementById('monthly-tree');
-        treeContainer.innerHTML = '';
+        // Ensure current month is always in the dropdown
+        const currentYearMonthStr = formatYearMonth(currentMonthlyDate);
+        const [currentYear, currentMonth] = currentYearMonthStr.split('-');
+        if (!monthlyNavData[currentYear]) monthlyNavData[currentYear] = [];
+        if (!monthlyNavData[currentYear].includes(currentMonth)) {
+            monthlyNavData[currentYear].push(currentMonth);
+        }
         
-        Object.keys(treeData).sort((a, b) => parseInt(b) - parseInt(a)).forEach(year => {
-            const yearNode = document.createElement('div');
-            yearNode.className = 'tree-node';
-            yearNode.innerHTML = `<div class="tree-title" onclick="this.parentElement.classList.toggle('collapsed')">${year}年</div>`;
-            
-            const childrenContainer = document.createElement('div');
-            childrenContainer.className = 'tree-children';
-            
-            treeData[year].sort((a, b) => parseInt(b.month) - parseInt(a.month)).forEach(item => {
-                const leaf = document.createElement('div');
-                leaf.className = 'tree-leaf';
-                leaf.dataset.date = item.date;
-                leaf.innerText = `${item.month}月`;
-                leaf.onclick = () => loadMonthlyData(item.date);
-                childrenContainer.appendChild(leaf);
-            });
-            
-            yearNode.appendChild(childrenContainer);
-            treeContainer.appendChild(yearNode);
+        const yearSelect = document.getElementById('monthly-year-select');
+        const monthSelect = document.getElementById('monthly-month-select');
+        if (!yearSelect || !monthSelect) return;
+        
+        const years = Object.keys(monthlyNavData).sort((a, b) => parseInt(b) - parseInt(a));
+        
+        yearSelect.innerHTML = '';
+        yearSelect.disabled = false;
+        years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.innerText = `${year}年`;
+            yearSelect.appendChild(option);
         });
         
-        // Re-apply active class
+        if (years.includes(currentYear)) {
+            yearSelect.value = currentYear;
+        } else {
+            yearSelect.value = years[0];
+        }
+        
+        updateMonthDropdown(false);
+    }
+
+    function updateMonthDropdown(triggerLoad = true) {
+        const yearSelect = document.getElementById('monthly-year-select');
+        const monthSelect = document.getElementById('monthly-month-select');
+        const selectedYear = yearSelect.value;
+        
+        monthSelect.innerHTML = '';
+        if (!selectedYear || !monthlyNavData[selectedYear]) {
+            monthSelect.innerHTML = '<option value="">-</option>';
+            monthSelect.disabled = true;
+            return;
+        }
+        
+        monthSelect.disabled = false;
+        const months = monthlyNavData[selectedYear].sort((a, b) => parseInt(a) - parseInt(b));
+        
+        months.forEach(month => {
+            const option = document.createElement('option');
+            option.value = month;
+            option.innerText = `${month}月`;
+            monthSelect.appendChild(option);
+        });
+        
         const currentYearMonthStr = formatYearMonth(currentMonthlyDate);
-        document.querySelectorAll('#monthly-tree .tree-leaf').forEach(el => el.classList.remove('active'));
-        const activeLeaf = document.querySelector(`#monthly-tree .tree-leaf[data-date="${currentYearMonthStr}"]`);
-        if (activeLeaf) activeLeaf.classList.add('active');
+        const [currentYear, currentMonth] = currentYearMonthStr.split('-');
+        
+        if (selectedYear === currentYear && months.includes(currentMonth)) {
+            monthSelect.value = currentMonth;
+        } else {
+            monthSelect.value = months[0];
+        }
+        
+        if (triggerLoad && monthSelect.value) {
+            loadMonthlyData(`${selectedYear}-${monthSelect.value}`);
+        }
+    }
+
+    function onMonthlyYearChange() {
+        updateMonthDropdown(true);
+    }
+
+    function onMonthlyMonthChange() {
+        const year = document.getElementById('monthly-year-select').value;
+        const month = document.getElementById('monthly-month-select').value;
+        if (year && month) {
+            loadMonthlyData(`${year}-${month}`);
+        }
     }
 
     function toggleMethodology() {
