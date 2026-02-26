@@ -1,0 +1,2791 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>效率工具：四象限 & KISS复盘</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --primary-hover: #357abd;
+            --bg-color: #f4f7f6;
+            --sidebar-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #888888;
+            --border-color: #eeeeee;
+            --card-bg: #ffffff;
+            --card-shadow: rgba(0,0,0,0.05);
+            --hover-bg: #f0f4f8;
+            --active-bg: #e6f0fa;
+            --input-border: #dddddd;
+            --ai-box-bg: #ffffff;
+            --ai-box-border: #e0e0e0;
+            --modal-bg: #ffffff;
+            --modal-overlay: rgba(0,0,0,0.5);
+            --btn-outline-border: #cccccc;
+            --btn-outline-hover: #f5f5f5;
+            
+            /* 四象限颜色 */
+            --q-tl-bg: #e8f5e9; /* 浅绿 - 重要不紧急 */
+            --q-tr-bg: #ffebee; /* 浅红 - 重要且紧急 */
+            --q-bl-bg: #f5f5f5; /* 浅灰 - 不重要不紧急 */
+            --q-br-bg: #fff8e1; /* 浅黄 - 不重要但紧急 */
+
+            /* KISS颜色 */
+            --k-keep-bg: #e3f2fd; /* 浅蓝 */
+            --k-improve-bg: #fff3e0; /* 浅橙 */
+            --k-start-bg: #e0f7fa; /* 浅青 */
+            --k-stop-bg: #fce4ec; /* 浅粉 */
+        }
+
+        :root.dark-mode {
+            --primary-color: #5fa8ff;
+            --primary-hover: #7bb8ff;
+            --bg-color: #121212;
+            --sidebar-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border-color: #333333;
+            --card-bg: #242424;
+            --card-shadow: rgba(0,0,0,0.3);
+            --hover-bg: #2a2a2a;
+            --active-bg: #2d3748;
+            --input-border: #444444;
+            --ai-box-bg: #1e1e1e;
+            --ai-box-border: #333333;
+            --modal-bg: #1e1e1e;
+            --modal-overlay: rgba(0,0,0,0.7);
+            --btn-outline-border: #555555;
+            --btn-outline-hover: #2a2a2a;
+
+            /* 四象限颜色 (深色模式) */
+            --q-tl-bg: #1b3320; 
+            --q-tr-bg: #3b1c1f; 
+            --q-bl-bg: #2a2a2a; 
+            --q-br-bg: #332b1a; 
+
+            /* KISS颜色 (深色模式) */
+            --k-keep-bg: #1a2b3c; 
+            --k-improve-bg: #332516; 
+            --k-start-bg: #162c30; 
+            --k-stop-bg: #381a24; 
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        /* 布局 */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 左侧导航 */
+        .sidebar {
+            width: 240px;
+            background-color: var(--sidebar-bg);
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .sidebar-title {
+            padding: 0 20px 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .theme-toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--text-main);
+            padding: 4px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-toggle-btn:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .nav-btn {
+            padding: 15px 20px;
+            border: none;
+            background: none;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .nav-btn.active {
+            background-color: var(--active-bg);
+            color: var(--primary-color);
+            border-right: 4px solid var(--primary-color);
+            font-weight: 500;
+        }
+
+        .spacer {
+            flex-grow: 1;
+        }
+
+        .reset-btn-container {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--btn-outline-border);
+            color: var(--text-main);
+            width: 100%;
+        }
+
+        .btn-outline:hover {
+            background: var(--btn-outline-hover);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        /* 右侧内容 */
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .view-section {
+            display: none;
+            height: 100%;
+            flex-direction: column;
+        }
+
+        .view-section.active {
+            display: flex;
+        }
+
+        .view-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .view-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        /* AI点评区域 */
+        .ai-review-box {
+            background: var(--ai-box-bg);
+            border: 1px solid var(--ai-box-border);
+            border-left: 4px solid #9b59b6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+            position: relative;
+            box-shadow: 0 4px 12px var(--card-shadow);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ai-review-box h3 {
+            margin-bottom: 10px;
+            color: #8e44ad;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-review-content {
+            white-space: pre-line;
+            color: var(--text-main);
+            font-size: 0.95rem;
+        }
+
+        .close-ai-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-ai-btn:hover {
+            color: var(--text-main);
+        }
+
+        /* 2x2 网格 */
+        .grid-2x2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+            flex-grow: 1;
+            min-height: 600px;
+        }
+
+        .grid-cell {
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 8px var(--card-shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .cell-header {
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .task-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            min-height: 50px;
+            padding-bottom: 10px;
+        }
+
+        /* 任务卡片 */
+        .task-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px var(--card-shadow);
+            cursor: grab;
+            position: relative;
+            border: 1px solid transparent;
+            transition: box-shadow 0.2s;
+        }
+
+        .task-card:hover {
+            box-shadow: 0 4px 8px var(--card-shadow);
+        }
+
+        .task-card:active {
+            cursor: grabbing;
+        }
+
+        .task-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+            outline: none;
+            min-height: 1.2em;
+        }
+
+        .task-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            outline: none;
+            min-height: 1.2em;
+        }
+
+        [contenteditable="true"]:empty:before {
+            content: attr(placeholder);
+            color: #bbb;
+            pointer-events: none;
+            display: block; /* For Firefox */
+        }
+
+        .delete-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            padding: 4px;
+        }
+
+        .task-card:hover .delete-btn, .kiss-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .add-task-btn {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            border: 1px dashed var(--btn-outline-border);
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .add-task-btn:hover {
+            background: var(--hover-bg);
+            border-color: var(--text-muted);
+        }
+
+        /* KISS 列表项 */
+        .kiss-item {
+            display: flex;
+            align-items: flex-start;
+            background: var(--card-bg);
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            position: relative;
+            box-shadow: 0 1px 2px var(--card-shadow);
+        }
+
+        .kiss-checkbox {
+            margin-top: 4px;
+            margin-right: 10px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .kiss-text {
+            flex-grow: 1;
+            outline: none;
+            padding-right: 24px; /* 为删除按钮留空间 */
+        }
+
+        .kiss-item.checked .kiss-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .kiss-add-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .kiss-input {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            outline: none;
+            background: var(--card-bg);
+            color: var(--text-main);
+        }
+
+        .kiss-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--modal-overlay);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background: var(--modal-bg);
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px var(--card-shadow);
+            overflow: hidden;
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+        .modal-body {
+            padding: 20px;
+        }
+        .sync-status {
+            padding: 10px;
+            background: var(--hover-bg);
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        .sync-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .sync-card {
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+            background: var(--card-bg);
+        }
+        .sync-card h4 {
+            margin-bottom: 5px;
+        }
+        .sync-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        /* 日志视图样式 */
+        .logs-container {
+            display: flex;
+            height: calc(100vh - 100px);
+            gap: 20px;
+        }
+        .logs-sidebar {
+            width: 220px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .logs-sidebar h3 {
+            margin-bottom: 15px;
+            color: var(--text-main);
+            font-size: 1.1rem;
+        }
+        .logs-editor {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .logs-date-nav {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .logs-date-nav button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+        .logs-date-nav button:hover {
+            color: var(--primary-color);
+        }
+        .logs-date-nav h2 {
+            margin: 0;
+            font-size: 1.3rem;
+            color: var(--text-main);
+            white-space: nowrap;
+        }
+        .logs-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .logs-actions .btn {
+            white-space: nowrap;
+        }
+        .log-field {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .log-field label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+        .log-field textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 10px;
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            background: var(--bg-color);
+            color: var(--text-main);
+            resize: vertical;
+            font-family: inherit;
+        }
+        .log-field textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* 树形目录样式 */
+        .tree-node {
+            margin-left: 15px;
+            display: none;
+        }
+        .tree-node.expanded {
+            display: block;
+        }
+        .tree-item {
+            cursor: pointer;
+            padding: 6px 0;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            user-select: none;
+        }
+        .tree-item:hover {
+            color: var(--primary-color);
+        }
+        .tree-item.active {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        .tree-toggle {
+            margin-right: 5px;
+            font-size: 0.8em;
+            color: var(--text-muted);
+            width: 12px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        /* 下拉菜单 */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: var(--card-bg);
+            min-width: 180px;
+            box-shadow: 0 8px 16px var(--card-shadow);
+            z-index: 100;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .dropdown-menu a {
+            color: var(--text-main);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 0.9rem;
+        }
+        .dropdown-menu a:hover {
+            background-color: var(--hover-bg);
+        }
+        .dropdown.open .dropdown-menu,
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+
+        /* 回收箱视图 */
+        .recycle-container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px var(--card-shadow);
+            height: calc(100vh - 140px);
+            display: flex;
+            flex-direction: column;
+        }
+        .recycle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .recycle-title {
+            font-size: 1.3rem;
+            color: var(--text-main);
+            margin: 0;
+        }
+        .recycle-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .recycle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        .recycle-item:hover {
+            border-color: var(--primary-color);
+        }
+        .recycle-item-text {
+            flex: 1;
+            color: var(--text-main);
+            font-size: 1rem;
+            cursor: text;
+            padding: 5px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            outline: none;
+            background: transparent;
+        }
+        .recycle-item-text:focus {
+            border-color: var(--primary-color);
+            background-color: var(--card-bg);
+        }
+        .recycle-item-delete {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            margin-left: 10px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .recycle-item-delete:hover {
+            opacity: 1;
+        }
+        .recycle-input-area {
+            display: flex;
+            gap: 10px;
+        }
+        .recycle-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            outline: none;
+        }
+        .recycle-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .logs-container {
+                flex-direction: column;
+                height: auto;
+            }
+            .logs-sidebar {
+                width: 100%;
+                max-height: 200px;
+            }
+            .logs-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+    <!-- 引入 mammoth.js 用于解析 docx 文件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- 左侧导航 -->
+    <div class="sidebar">
+        <div class="sidebar-title">
+            <span>效率工具箱</span>
+            <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-btn" title="切换夜间模式">🌙</button>
+        </div>
+        <button class="nav-btn active" onclick="switchTab('logs')">
+            <span>📔</span> 日志
+        </button>
+        <button class="nav-btn" onclick="switchTab('kiss')">
+            <span>🧩</span> KISS模型
+        </button>
+        <button class="nav-btn" onclick="switchTab('quadrant')">
+            <span>📊</span> 四象限图
+        </button>
+        <button class="nav-btn" onclick="switchTab('recycle')">
+            <span>🗑️</span> 回收箱
+        </button>
+        <button class="nav-btn" onclick="switchTab('pomodoro')">
+            <span>🍅</span> 番茄钟
+        </button>
+        <div class="spacer"></div>
+        <div class="reset-btn-container">
+            <button class="btn btn-outline" onclick="resetData()">↺ 重置为示例</button>
+        </div>
+    </div>
+
+    <!-- 右侧内容 -->
+    <div class="main-content">
+        
+        <!-- 日志视图 -->
+        <div id="logs-view" class="view-section active">
+            <div class="view-header">
+                <h2 class="view-title">每日日志</h2>
+            </div>
+            <div class="logs-container">
+                <div class="logs-sidebar">
+                    <h3>日志目录</h3>
+                    <div id="logs-tree"></div>
+                </div>
+                <div class="logs-editor">
+                    <div class="logs-header">
+                        <div class="logs-date-nav">
+                            <button onclick="changeLogDate(-1)">◀</button>
+                            <h2 id="current-log-date">加载中...</h2>
+                            <button onclick="changeLogDate(1)">▶</button>
+                        </div>
+                        <div class="logs-actions">
+                            <button class="btn btn-primary" onclick="saveLog()">保存</button>
+                            <button class="btn btn-outline" style="color: #ff6b6b; border-color: #ff6b6b;" onclick="deleteLog()">删除</button>
+                            <div class="dropdown" onmouseenter="this.classList.add('open')" onmouseleave="this.classList.remove('open')" onclick="this.classList.toggle('open')">
+                                <button class="btn btn-outline dropdown-toggle">📤 导出/导入</button>
+                                <div class="dropdown-menu">
+                                    <a href="javascript:void(0)" onclick="showExportModulesModal(); event.stopPropagation();">按模块导出 (MD)</a>
+                                    <div style="border-top: 1px solid var(--border-color); margin: 5px 0;"></div>
+                                    <a href="javascript:void(0)" onclick="document.getElementById('import-file').click(); event.stopPropagation();">导入日志 (MD/DOCX)</a>
+                                    <input type="file" id="import-file" style="display: none;" accept=".md,.docx" onchange="importLogs(event)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="logs-body">
+                        <div class="log-field">
+                            <label>😊 开心的事：</label>
+                            <textarea id="log-happy" placeholder="今天发生了什么开心的事？"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>📝 充实的事：</label>
+                            <textarea id="log-fulfilling" placeholder="今天完成了哪些有意义的工作或学习？"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>🙏 感谢的人：</label>
+                            <textarea id="log-grateful" placeholder="今天想感谢谁？为什么？"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>🔧 改进的事：</label>
+                            <textarea id="log-improve" placeholder="今天有哪些可以做得更好的地方？"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>💭 今日思考：</label>
+                            <textarea id="log-thoughts" placeholder="今天的感悟或灵感..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 四象限视图 -->
+        <div id="quadrant-view" class="view-section">
+            <div class="view-header">
+                <h2 class="view-title">四象限任务看板</h2>
+                <button class="btn btn-primary" onclick="generateAIReview('quadrant')">✨ AI点评</button>
+            </div>
+            
+            <div id="quadrant-ai-review" class="ai-review-box">
+                <button class="close-ai-btn" onclick="closeAIReview('quadrant')">×</button>
+                <h3>✨ AI 智能点评</h3>
+                <div class="ai-review-content" id="quadrant-ai-content"></div>
+            </div>
+
+            <div class="grid-2x2">
+                <!-- 左上：重要不紧急 -->
+                <div class="grid-cell" style="background-color: var(--q-tl-bg);">
+                    <div class="cell-header">重要不紧急 <span style="font-size: 0.8em; color: #666; font-weight: normal;">(计划)</span></div>
+                    <div class="task-list" id="q-tl" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <button class="add-task-btn" onclick="addTask('q-tl')">+ 添加任务</button>
+                </div>
+                <!-- 右上：重要且紧急 -->
+                <div class="grid-cell" style="background-color: var(--q-tr-bg);">
+                    <div class="cell-header">重要且紧急 <span style="font-size: 0.8em; color: #666; font-weight: normal;">(立即做)</span></div>
+                    <div class="task-list" id="q-tr" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <button class="add-task-btn" onclick="addTask('q-tr')">+ 添加任务</button>
+                </div>
+                <!-- 左下：不重要不紧急 -->
+                <div class="grid-cell" style="background-color: var(--q-bl-bg);">
+                    <div class="cell-header">不重要不紧急 <span style="font-size: 0.8em; color: #666; font-weight: normal;">(减少做)</span></div>
+                    <div class="task-list" id="q-bl" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <button class="add-task-btn" onclick="addTask('q-bl')">+ 添加任务</button>
+                </div>
+                <!-- 右下：不重要但紧急 -->
+                <div class="grid-cell" style="background-color: var(--q-br-bg);">
+                    <div class="cell-header">不重要但紧急 <span style="font-size: 0.8em; color: #666; font-weight: normal;">(委派)</span></div>
+                    <div class="task-list" id="q-br" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <button class="add-task-btn" onclick="addTask('q-br')">+ 添加任务</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KISS模型视图 -->
+        <div id="kiss-view" class="view-section">
+            <div class="view-header">
+                <h2 class="view-title">KISS 模型复盘</h2>
+                <button class="btn btn-primary" onclick="generateAIReview('kiss')">✨ AI点评</button>
+            </div>
+
+            <div id="kiss-ai-review" class="ai-review-box">
+                <button class="close-ai-btn" onclick="closeAIReview('kiss')">×</button>
+                <h3>✨ AI 智能点评</h3>
+                <div class="ai-review-content" id="kiss-ai-content"></div>
+            </div>
+
+            <div class="grid-2x2">
+                <!-- Keep -->
+                <div class="grid-cell" style="background-color: var(--k-keep-bg);">
+                    <div class="cell-header">Keep (保持)</div>
+                    <div class="task-list" id="k-keep"></div>
+                    <div class="kiss-add-container">
+                        <input type="text" class="kiss-input" id="input-k-keep" placeholder="输入要保持的事项..." onkeypress="handleKissEnter(event, 'k-keep')">
+                        <button class="btn btn-primary" onclick="addKissItem('k-keep')">添加</button>
+                    </div>
+                </div>
+                <!-- Improve -->
+                <div class="grid-cell" style="background-color: var(--k-improve-bg);">
+                    <div class="cell-header">Improve (改进)</div>
+                    <div class="task-list" id="k-improve"></div>
+                    <div class="kiss-add-container">
+                        <input type="text" class="kiss-input" id="input-k-improve" placeholder="输入需改进的事项..." onkeypress="handleKissEnter(event, 'k-improve')">
+                        <button class="btn btn-primary" onclick="addKissItem('k-improve')">添加</button>
+                    </div>
+                </div>
+                <!-- Start -->
+                <div class="grid-cell" style="background-color: var(--k-start-bg);">
+                    <div class="cell-header">Start (开始)</div>
+                    <div class="task-list" id="k-start"></div>
+                    <div class="kiss-add-container">
+                        <input type="text" class="kiss-input" id="input-k-start" placeholder="输入要开始的事项..." onkeypress="handleKissEnter(event, 'k-start')">
+                        <button class="btn btn-primary" onclick="addKissItem('k-start')">添加</button>
+                    </div>
+                </div>
+                <!-- Stop -->
+                <div class="grid-cell" style="background-color: var(--k-stop-bg);">
+                    <div class="cell-header">Stop (停止)</div>
+                    <div class="task-list" id="k-stop"></div>
+                    <div class="kiss-add-container">
+                        <input type="text" class="kiss-input" id="input-k-stop" placeholder="输入要停止的事项..." onkeypress="handleKissEnter(event, 'k-stop')">
+                        <button class="btn btn-primary" onclick="addKissItem('k-stop')">添加</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 回收箱视图 -->
+        <div id="recycle-view" class="view-section">
+            <div class="recycle-container">
+                <div class="recycle-header">
+                    <h2 class="recycle-title" id="recycle-month-title">📅 任务池</h2>
+                    <button class="btn btn-outline" style="color: #ff6b6b; border-color: #ff6b6b;" onclick="clearRecycleBin()">清空本月任务</button>
+                </div>
+                <div class="recycle-list" id="recycle-list">
+                    <!-- 任务项将在这里渲染 -->
+                </div>
+                <div class="recycle-input-area">
+                    <input type="text" class="recycle-input" id="recycle-input" placeholder="输入新任务..." onkeypress="handleRecycleEnter(event)">
+                    <button class="btn btn-primary" onclick="addRecycleTask()">添加</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 番茄钟视图 -->
+        <div id="pomodoro-view" class="view-section">
+            <div class="view-header">
+                <h2 class="view-title">番茄钟</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">悬浮窗为浏览器内模拟，可拖动至屏幕边缘</span>
+                    <button class="btn btn-outline" onclick="openPomoFloat()">开启悬浮窗</button>
+                </div>
+            </div>
+            
+            <div class="pomo-container">
+                <div class="pomo-timer-card">
+                    <div class="pomo-stage" id="pomo-stage-display">工作 (25分钟)</div>
+                    <div class="pomo-time" id="pomo-time-display">25:00</div>
+                    <div class="pomo-controls">
+                        <button class="btn btn-primary" id="pomo-start-btn" onclick="togglePomoTimer()">开始</button>
+                        <button class="btn btn-outline" onclick="resetPomoTimer()">重置</button>
+                        <button class="btn btn-outline" onclick="skipPomoStage()">跳过</button>
+                    </div>
+                </div>
+                
+                <div class="pomo-stats-card">
+                    <div class="pomo-stat-item">
+                        <div class="pomo-stat-value" id="pomo-today-time">0</div>
+                        <div class="pomo-stat-label">今日专注 (分钟)</div>
+                    </div>
+                    <div class="pomo-stat-item">
+                        <div class="pomo-stat-value" id="pomo-today-count">0</div>
+                        <div class="pomo-stat-label">今日番茄数</div>
+                    </div>
+                </div>
+                
+                <div class="pomo-charts-container" style="display: none;">
+                    <div class="pomo-chart-card">
+                        <h3>最近7天专注趋势</h3>
+                        <canvas id="pomo-line-chart"></canvas>
+                    </div>
+                    <div class="pomo-chart-card">
+                        <h3>专注热力图</h3>
+                        <div id="pomo-heatmap" class="pomo-heatmap"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Sync Modal -->
+<div id="sync-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>☁️ 多端同步</h3>
+            <button class="close-btn" onclick="closeSyncModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="sync-status" id="sync-status-display">
+                当前状态：未连接同步
+            </div>
+            
+            <div class="sync-actions">
+                <div class="sync-card">
+                    <h4>创建新同步</h4>
+                    <p>生成一个同步码，在其他设备输入即可同步当前数据。</p>
+                    <button class="btn btn-primary" onclick="generateSyncCode()">生成同步码</button>
+                </div>
+                
+                <div class="sync-card">
+                    <h4>连接已有同步</h4>
+                    <p>输入其他设备生成的同步码，获取数据。</p>
+                    <input type="text" id="sync-code-input" placeholder="输入6位同步码" class="kiss-input" style="margin-bottom: 10px; width: 100%;">
+                    <button class="btn btn-primary" onclick="connectSyncCode()">连接并获取数据</button>
+                </div>
+            </div>
+            
+            <div id="active-sync-panel" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <h4>当前同步码：<span id="current-sync-code" style="color: var(--primary-color); font-size: 1.2rem; letter-spacing: 2px;"></span></h4>
+                <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">数据会在您修改时自动同步到云端。您也可以手动操作：</p>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-outline" onclick="pushSyncData()">⬆️ 手动上传</button>
+                    <button class="btn btn-outline" onclick="pullSyncData()">⬇️ 手动下载</button>
+                    <button class="btn btn-outline" style="color: #ff6b6b; border-color: #ff6b6b;" onclick="disconnectSync()">断开连接</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- 导出模块选择弹窗 -->
+    <div id="export-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📤 按模块导出</h3>
+                <button class="close-btn" onclick="closeExportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: var(--text-muted);">选择要导出的模块（将生成Markdown文件）：</p>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="exp-happy" checked> 😊 开心的事
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="exp-fulfilling" checked> 📝 充实的事
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="exp-grateful" checked> 🙏 感谢的人
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="exp-improve" checked> 🔧 改进的事
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="exp-thoughts" checked> 💭 今日思考
+                    </label>
+                </div>
+                
+                <div style="border-top: 1px solid var(--border-color); margin: 15px 0;"></div>
+                <p style="margin-bottom: 15px; color: var(--text-muted);">选择导出范围：</p>
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="export-range" value="all" checked onchange="toggleDateRange(false)"> 📚 全部日志
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="radio" name="export-range" value="custom" onchange="toggleDateRange(true)"> 🗓️ 自定义范围
+                    </label>
+                    
+                    <div id="custom-date-range" style="display: none; flex-direction: column; gap: 10px; margin-left: 24px; margin-top: 5px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="width: 70px; font-size: 0.9rem;">起始日期:</label>
+                            <input type="date" id="export-start-date" class="kiss-input" style="flex: 1;" onchange="validateExportBtn()">
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <label style="width: 70px; font-size: 0.9rem;">结束日期:</label>
+                            <input type="date" id="export-end-date" class="kiss-input" style="flex: 1;" onchange="validateExportBtn()">
+                        </div>
+                    </div>
+                </div>
+
+                <button id="export-btn" class="btn btn-primary" style="width: 100%;" onclick="exportSelectedModules()">生成并下载</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- 数据结构与初始化 ---
+    const defaultData = {
+        quadrants: {
+            'q-tl': [ // 重要不紧急
+                { id: 't1', title: '制定下季度规划', desc: '思考核心目标与战略' },
+                { id: 't2', title: '学习新技能', desc: '每天阅读30分钟' }
+            ],
+            'q-tr': [ // 重要且紧急
+                { id: 't3', title: '修复线上紧急Bug', desc: '影响用户支付流程' },
+                { id: 't4', title: '提交项目最终报告', desc: '今天下午5点截止' }
+            ],
+            'q-bl': [ // 不重要不紧急
+                { id: 't5', title: '漫无目的刷短视频', desc: '消耗大量时间' }
+            ],
+            'q-br': [ // 不重要但紧急
+                { id: 't6', title: '回复推销邮件', desc: '不重要但一直弹窗提示' },
+                { id: 't7', title: '帮同事拿快递', desc: '顺手的事' }
+            ]
+        },
+        kiss: {
+            'k-keep': [
+                { id: 'k1', text: '每天坚持复盘总结', checked: false },
+                { id: 'k2', text: '保持良好的作息时间', checked: false }
+            ],
+            'k-improve': [
+                { id: 'k3', text: '提高会议效率，控制在30分钟内', checked: false },
+                { id: 'k4', text: '代码注释需要更详细', checked: false }
+            ],
+            'k-start': [
+                { id: 'k5', text: '开始学习TypeScript', checked: false },
+                { id: 'k6', text: '每周进行一次技术分享', checked: false }
+            ],
+            'k-stop': [
+                { id: 'k7', text: '睡前频繁看手机', checked: false },
+                { id: 'k8', text: '在没有计划的情况下开始工作', checked: false }
+            ]
+        }
+    };
+
+    let appData = {};
+    let currentSyncCode = localStorage.getItem('efficiencySyncCode') || null;
+
+    // --- 主题切换 ---
+    function toggleTheme() {
+        const root = document.documentElement;
+        const btn = document.getElementById('theme-btn');
+        if (root.classList.contains('dark-mode')) {
+            root.classList.remove('dark-mode');
+            if(btn) btn.innerText = '🌙';
+            localStorage.setItem('efficiencyTheme', 'light');
+        } else {
+            root.classList.add('dark-mode');
+            if(btn) btn.innerText = '☀️';
+            localStorage.setItem('efficiencyTheme', 'dark');
+        }
+    }
+
+    function initTheme() {
+        const theme = localStorage.getItem('efficiencyTheme');
+        const root = document.documentElement;
+        const btn = document.getElementById('theme-btn');
+        if (theme === 'dark') {
+            root.classList.add('dark-mode');
+            if(btn) btn.innerText = '☀️';
+        }
+    }
+
+    function initData() {
+        initTheme();
+        initLogs();
+        initRecycleBin();
+        initPomodoro();
+        const stored = localStorage.getItem('efficiencyAppData');
+        if (stored) {
+            try {
+                appData = JSON.parse(stored);
+            } catch (e) {
+                appData = JSON.parse(JSON.stringify(defaultData));
+            }
+        } else {
+            appData = JSON.parse(JSON.stringify(defaultData));
+        }
+        renderAll();
+    }
+
+    function saveData(autoPush = true) {
+        localStorage.setItem('efficiencyAppData', JSON.stringify(appData));
+        if (autoPush && currentSyncCode) {
+            pushSyncData();
+        }
+    }
+
+    function resetData() {
+        if(confirm('确定要重置为默认示例数据吗？当前所有修改将丢失。')) {
+            appData = JSON.parse(JSON.stringify(defaultData));
+            saveData();
+            closeAIReview('quadrant');
+            closeAIReview('kiss');
+            renderAll();
+        }
+    }
+
+    // --- 视图切换 ---
+    function switchTab(tabId) {
+        // 更新按钮状态
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        // 更新视图显示
+        document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
+        document.getElementById(`${tabId}-view`).classList.add('active');
+    }
+
+    // --- 番茄钟逻辑 ---
+    let pomoTimer = null;
+    let pomoState = {
+        timeLeft: 25 * 60,
+        stage: 'work', // work, shortBreak, longBreak
+        isRunning: false,
+        completedCount: 0,
+        todayTime: 0,
+        todayCount: 0,
+        lastDate: new Date().toDateString()
+    };
+
+    const POMO_CONFIG = {
+        work: { time: 25 * 60, label: '工作 (25分钟)' },
+        shortBreak: { time: 5 * 60, label: '短休息 (5分钟)' },
+        longBreak: { time: 15 * 60, label: '长休息 (15分钟)' }
+    };
+
+    function initPomodoro() {
+        const stored = localStorage.getItem('pomoState');
+        if (stored) {
+            try {
+                pomoState = JSON.parse(stored);
+                // 检查是否跨天
+                if (pomoState.lastDate !== new Date().toDateString()) {
+                    pomoState.todayTime = 0;
+                    pomoState.todayCount = 0;
+                    pomoState.lastDate = new Date().toDateString();
+                }
+                // 如果页面刷新前在运行，重置为暂停状态，避免时间错乱
+                pomoState.isRunning = false; 
+            } catch (e) {
+                console.error('Failed to parse pomoState', e);
+            }
+        }
+        updatePomoUI();
+    }
+
+    function savePomoState() {
+        localStorage.setItem('pomoState', JSON.stringify(pomoState));
+        // 通知悬浮窗更新
+        localStorage.setItem('pomoSync', Date.now().toString());
+    }
+
+    function updatePomoUI() {
+        const minutes = Math.floor(pomoState.timeLeft / 60);
+        const seconds = pomoState.timeLeft % 60;
+        document.getElementById('pomo-time-display').innerText = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        document.getElementById('pomo-stage-display').innerText = POMO_CONFIG[pomoState.stage].label;
+        
+        const startBtn = document.getElementById('pomo-start-btn');
+        startBtn.innerText = pomoState.isRunning ? '暂停' : '开始';
+        
+        document.getElementById('pomo-today-time').innerText = pomoState.todayTime;
+        document.getElementById('pomo-today-count').innerText = pomoState.todayCount;
+
+        if (typeof updatePipUI === 'function') updatePipUI();
+        if (typeof updateMediaSessionState === 'function') updateMediaSessionState();
+    }
+
+    function togglePomoTimer() {
+        if (pomoState.isRunning) {
+            clearInterval(pomoTimer);
+            pomoState.isRunning = false;
+        } else {
+            pomoState.isRunning = true;
+            pomoTimer = setInterval(() => {
+                pomoState.timeLeft--;
+                if (pomoState.timeLeft <= 0) {
+                    handlePomoComplete();
+                }
+                updatePomoUI();
+                savePomoState();
+            }, 1000);
+        }
+        updatePomoUI();
+        savePomoState();
+    }
+
+    function resetPomoTimer() {
+        clearInterval(pomoTimer);
+        pomoState.isRunning = false;
+        pomoState.timeLeft = POMO_CONFIG[pomoState.stage].time;
+        updatePomoUI();
+        savePomoState();
+    }
+
+    function skipPomoStage() {
+        clearInterval(pomoTimer);
+        pomoState.isRunning = false;
+        handlePomoComplete(true);
+    }
+
+    function handlePomoComplete(isSkip = false) {
+        playPomoSound();
+        
+        if (pomoState.stage === 'work') {
+            if (!isSkip) {
+                pomoState.completedCount++;
+                pomoState.todayCount++;
+                pomoState.todayTime += 25;
+            }
+            
+            if (pomoState.completedCount > 0 && pomoState.completedCount % 4 === 0) {
+                pomoState.stage = 'longBreak';
+            } else {
+                pomoState.stage = 'shortBreak';
+            }
+        } else {
+            pomoState.stage = 'work';
+        }
+        
+        pomoState.timeLeft = POMO_CONFIG[pomoState.stage].time;
+        updatePomoUI();
+        savePomoState();
+    }
+
+    function playPomoSound() {
+        // 简单的提示音
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        gain.gain.setValueAtTime(0.5, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 1);
+    }
+
+    let pipVideo = null;
+    let pipCanvas = null;
+    let pipCtx = null;
+    let isPipActive = false;
+    let pipWindow = null;
+
+    async function openPomoFloat() {
+        // 尝试使用最新的 Document Picture-in-Picture API (Chrome 116+)
+        // 它允许渲染真实的 HTML，没有视频控件遮挡，可以做得更像圆形
+        if ('documentPictureInPicture' in window) {
+            try {
+                if (pipWindow) {
+                    pipWindow.focus();
+                    return;
+                }
+                
+                pipWindow = await window.documentPictureInPicture.requestWindow({
+                    width: 150,
+                    height: 150,
+                });
+                
+                const style = document.createElement('style');
+                style.textContent = `
+                    body {
+                        margin: 0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background-color: #1a1a1a;
+                        color: white;
+                        height: 100vh;
+                        font-family: 'Inter', system-ui, sans-serif;
+                        overflow: hidden;
+                    }
+                    .pip-container {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        width: 100vw;
+                        height: 100vh;
+                        border-radius: 50%;
+                        background: radial-gradient(circle, #2a2a2a 0%, #1a1a1a 100%);
+                        position: relative;
+                    }
+                    .time { font-size: 36px; font-weight: bold; margin-bottom: 2px; font-variant-numeric: tabular-nums; }
+                    .stage { font-size: 14px; color: #a3a3a3; }
+                    .controls { margin-top: 8px; display: flex; gap: 6px; }
+                    button { background: #333; color: white; border: none; padding: 4px 8px; border-radius: 12px; cursor: pointer; font-size: 10px; }
+                    button:hover { background: #444; }
+                `;
+                pipWindow.document.head.appendChild(style);
+
+                const container = document.createElement('div');
+                container.className = 'pip-container';
+                
+                const timeDiv = document.createElement('div');
+                timeDiv.className = 'time';
+                timeDiv.id = 'pip-time';
+                
+                const stageDiv = document.createElement('div');
+                stageDiv.className = 'stage';
+                stageDiv.id = 'pip-stage';
+
+                const controlsDiv = document.createElement('div');
+                controlsDiv.className = 'controls';
+                
+                const toggleBtn = document.createElement('button');
+                toggleBtn.id = 'pip-toggle-btn';
+                toggleBtn.onclick = () => togglePomoTimer();
+                
+                const skipBtn = document.createElement('button');
+                skipBtn.innerText = '跳过';
+                skipBtn.onclick = () => skipPomoStage();
+
+                controlsDiv.appendChild(toggleBtn);
+                controlsDiv.appendChild(skipBtn);
+
+                container.appendChild(timeDiv);
+                container.appendChild(stageDiv);
+                container.appendChild(controlsDiv);
+                
+                pipWindow.document.body.appendChild(container);
+
+                pipWindow.addEventListener('pagehide', () => {
+                    pipWindow = null;
+                });
+
+                updatePipUI();
+                return;
+            } catch (e) {
+                console.warn('Document PiP failed or not supported, falling back to Video PiP', e);
+            }
+        }
+
+        // 降级方案：Video Picture-in-Picture API
+        if (!('pictureInPictureEnabled' in document)) {
+            alert('您的浏览器不支持画中画 (Picture-in-Picture) API。建议使用最新版的 Chrome 或 Edge 浏览器。');
+            return;
+        }
+
+        if (!pipCanvas) {
+            pipCanvas = document.createElement('canvas');
+            // 提升内部渲染分辨率，使其在缩小到 150x150 时依然清晰
+            pipCanvas.width = 300;
+            pipCanvas.height = 300;
+            // 必须将 Canvas 添加到 DOM 中，否则浏览器会节流/停止后台渲染，导致时间不更新
+            pipCanvas.style.position = 'absolute';
+            pipCanvas.style.top = '-9999px';
+            pipCanvas.style.visibility = 'hidden';
+            document.body.appendChild(pipCanvas);
+            pipCtx = pipCanvas.getContext('2d');
+        }
+
+        isPipActive = true;
+        updatePipCanvas();
+
+        if (!pipVideo) {
+            pipVideo = document.createElement('video');
+            pipVideo.muted = true;
+            pipVideo.playsInline = true;
+            pipVideo.srcObject = pipCanvas.captureStream(30);
+            
+            pipVideo.addEventListener('enterpictureinpicture', () => {
+                isPipActive = true;
+                if (!window.pipLoopStarted) {
+                    window.pipLoopStarted = true;
+                    requestAnimationFrame(renderPipCanvasLoop);
+                }
+            });
+            
+            pipVideo.addEventListener('leavepictureinpicture', () => {
+                isPipActive = false;
+            });
+            
+            await new Promise((resolve) => {
+                pipVideo.addEventListener('loadedmetadata', resolve, { once: true });
+                pipVideo.play().catch(e => console.error('播放视频流失败:', e));
+            });
+        }
+
+        try {
+            if (document.pictureInPictureElement !== pipVideo) {
+                await pipVideo.requestPictureInPicture();
+            }
+        } catch (error) {
+            console.error('进入画中画失败:', error);
+            alert('无法打开悬浮窗。请确保您已与页面交互（例如点击按钮），并且浏览器允许画中画。');
+        }
+
+        setupMediaSession();
+    }
+
+    function renderPipCanvasLoop() {
+        if (isPipActive) {
+            updatePipCanvas();
+        }
+        requestAnimationFrame(renderPipCanvasLoop);
+    }
+
+    function updatePipUI() {
+        if (pipWindow) {
+            const minutes = Math.floor(pomoState.timeLeft / 60);
+            const seconds = pomoState.timeLeft % 60;
+            const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            const stageLabels = {
+                work: '🍅 工作',
+                shortBreak: '☕ 短休',
+                longBreak: '🛋️ 长休'
+            };
+            
+            const timeEl = pipWindow.document.getElementById('pip-time');
+            if (timeEl) timeEl.innerText = timeStr;
+            
+            const stageEl = pipWindow.document.getElementById('pip-stage');
+            if (stageEl) stageEl.innerText = stageLabels[pomoState.stage];
+            
+            const toggleBtn = pipWindow.document.getElementById('pip-toggle-btn');
+            if (toggleBtn) toggleBtn.innerText = pomoState.isRunning ? '暂停' : '开始';
+        }
+        
+        updatePipCanvas();
+    }
+
+    function setupMediaSession() {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.setActionHandler('play', () => {
+                togglePomoTimer();
+            });
+            navigator.mediaSession.setActionHandler('pause', () => {
+                togglePomoTimer();
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                skipPomoStage();
+            });
+            updateMediaSessionState();
+        }
+    }
+
+    function updateMediaSessionState() {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.playbackState = pomoState.isRunning ? 'playing' : 'paused';
+        }
+    }
+
+    function updatePipCanvas() {
+        if (!isPipActive || !pipCtx) return;
+
+        const width = pipCanvas.width;
+        const height = pipCanvas.height;
+        
+        pipCtx.fillStyle = '#1a1a1a';
+        pipCtx.fillRect(0, 0, width, height);
+
+        pipCtx.beginPath();
+        pipCtx.arc(width/2, height/2, width/2 - 10, 0, Math.PI * 2);
+        pipCtx.fillStyle = '#2a2a2a';
+        pipCtx.fill();
+        
+        const totalTime = POMO_CONFIG[pomoState.stage].time;
+        const progress = 1 - (pomoState.timeLeft / totalTime);
+        pipCtx.beginPath();
+        pipCtx.arc(width/2, height/2, width/2 - 10, -Math.PI/2, -Math.PI/2 + (Math.PI * 2 * progress));
+        pipCtx.strokeStyle = pomoState.stage === 'work' ? '#ef4444' : '#22c55e';
+        pipCtx.lineWidth = 15;
+        pipCtx.lineCap = 'round';
+        pipCtx.stroke();
+
+        const minutes = Math.floor(pomoState.timeLeft / 60);
+        const seconds = pomoState.timeLeft % 60;
+        const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        const stageLabels = {
+            work: '🍅 工作',
+            shortBreak: '☕ 短休',
+            longBreak: '🛋️ 长休'
+        };
+        const stageStr = stageLabels[pomoState.stage];
+
+        pipCtx.textAlign = 'center';
+        pipCtx.textBaseline = 'middle';
+        
+        pipCtx.fillStyle = '#ffffff';
+        pipCtx.font = 'bold 72px Inter, system-ui, sans-serif';
+        pipCtx.fillText(timeStr, width/2, height/2 - 15);
+        
+        pipCtx.fillStyle = '#a3a3a3';
+        pipCtx.font = '28px Inter, system-ui, sans-serif';
+        pipCtx.fillText(stageStr, width/2, height/2 + 45);
+    }
+
+    // --- 渲染逻辑 ---
+    function renderAll() {
+        renderQuadrants();
+        renderKiss();
+    }
+
+    // --- 回收箱逻辑 ---
+    let recycleData = { month: '', tasks: [] };
+
+    function initRecycleBin() {
+        const stored = localStorage.getItem('monthly_tasks');
+        if (stored) {
+            try {
+                recycleData = JSON.parse(stored);
+            } catch (e) {
+                recycleData = { month: '', tasks: [] };
+            }
+        }
+
+        const today = new Date();
+        const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        const isFirstDay = today.getDate() === 1;
+
+        if (isFirstDay && recycleData.month !== currentMonth) {
+            recycleData = { month: currentMonth, tasks: [] };
+            saveRecycleData();
+            alert('本月任务池已清空，开始新的一个月');
+        } else if (recycleData.month !== currentMonth) {
+            recycleData.month = currentMonth;
+            saveRecycleData();
+        }
+
+        document.getElementById('recycle-month-title').innerText = `📅 ${today.getFullYear()}年${today.getMonth() + 1}月 任务池`;
+        renderRecycleList();
+    }
+
+    function saveRecycleData() {
+        localStorage.setItem('monthly_tasks', JSON.stringify(recycleData));
+    }
+
+    function renderRecycleList() {
+        const list = document.getElementById('recycle-list');
+        list.innerHTML = '';
+        recycleData.tasks.forEach((task, index) => {
+            const item = document.createElement('div');
+            item.className = 'recycle-item';
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'recycle-item-text';
+            input.value = task;
+            input.readOnly = true;
+            
+            input.ondblclick = function() {
+                this.readOnly = false;
+                this.focus();
+            };
+            
+            input.onblur = function() {
+                this.readOnly = true;
+                updateRecycleTask(index, this.value);
+            };
+            
+            input.onkeypress = function(e) {
+                if (e.key === 'Enter') {
+                    this.blur();
+                }
+            };
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'recycle-item-delete';
+            delBtn.innerHTML = '🗑️';
+            delBtn.onclick = () => deleteRecycleTask(index);
+
+            item.appendChild(input);
+            item.appendChild(delBtn);
+            list.appendChild(item);
+        });
+    }
+
+    function addRecycleTask() {
+        const input = document.getElementById('recycle-input');
+        const text = input.value.trim();
+        if (text) {
+            recycleData.tasks.push(text);
+            saveRecycleData();
+            renderRecycleList();
+            input.value = '';
+        }
+    }
+
+    function handleRecycleEnter(e) {
+        if (e.key === 'Enter') {
+            addRecycleTask();
+        }
+    }
+
+    function updateRecycleTask(index, newText) {
+        newText = newText.trim();
+        if (newText) {
+            recycleData.tasks[index] = newText;
+        } else {
+            recycleData.tasks.splice(index, 1);
+        }
+        saveRecycleData();
+        renderRecycleList();
+    }
+
+    function deleteRecycleTask(index) {
+        recycleData.tasks.splice(index, 1);
+        saveRecycleData();
+        renderRecycleList();
+    }
+
+    function clearRecycleBin() {
+        if (confirm('确定要清空本月的所有任务吗？')) {
+            const today = new Date();
+            const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            recycleData = { month: currentMonth, tasks: [] };
+            saveRecycleData();
+            renderRecycleList();
+        }
+    }
+
+    function escapeHTML(str) {
+        return str.replace(/&/g, '&amp;')
+                  .replace(/\x3C/g, '&lt;')
+                  .replace(/\x3E/g, '&gt;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#039;');
+    }
+
+    // --- 四象限逻辑 ---
+    function renderQuadrants() {
+        const quadrants = ['q-tl', 'q-tr', 'q-bl', 'q-br'];
+        quadrants.forEach(qId => {
+            const container = document.getElementById(qId);
+            container.innerHTML = '';
+            appData.quadrants[qId].forEach(task => {
+                const card = document.createElement('div');
+                card.className = 'task-card';
+                card.draggable = true;
+                card.id = task.id;
+                card.ondragstart = (e) => drag(e, qId, task.id);
+                
+                card.innerHTML = `
+                    <div class="task-title" contenteditable="true" placeholder="任务标题..." onblur="updateTask('${qId}', '${task.id}', 'title', this.innerText)">${escapeHTML(task.title)}</div>
+                    <div class="task-desc" contenteditable="true" placeholder="简短描述..." onblur="updateTask('${qId}', '${task.id}', 'desc', this.innerText)">${escapeHTML(task.desc)}</div>
+                    <button class="delete-btn" onclick="deleteTask('${qId}', '${task.id}')" title="删除任务">🗑️</button>
+                `;
+                container.appendChild(card);
+            });
+        });
+    }
+
+    function addTask(qId) {
+        const newTask = {
+            id: 't_' + Date.now(),
+            title: '',
+            desc: ''
+        };
+        appData.quadrants[qId].push(newTask);
+        saveData();
+        renderQuadrants();
+        
+        // 自动聚焦到新添加的任务标题
+        setTimeout(() => {
+            const newCard = document.getElementById(newTask.id);
+            if(newCard) {
+                const titleEl = newCard.querySelector('.task-title');
+                titleEl.focus();
+            }
+        }, 50);
+    }
+
+    function updateTask(qId, taskId, field, value) {
+        const task = appData.quadrants[qId].find(t => t.id === taskId);
+        if (task) {
+            task[field] = value;
+            saveData();
+        }
+    }
+
+    function deleteTask(qId, taskId) {
+        appData.quadrants[qId] = appData.quadrants[qId].filter(t => t.id !== taskId);
+        saveData();
+        renderQuadrants();
+    }
+
+    // 拖拽逻辑
+    function drag(ev, sourceQid, taskId) {
+        ev.dataTransfer.setData("text/plain", JSON.stringify({ sourceQid, taskId }));
+        ev.dataTransfer.effectAllowed = "move";
+    }
+
+    function allowDrop(ev) {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = "move";
+    }
+
+    function drop(ev) {
+        ev.preventDefault();
+        const dataStr = ev.dataTransfer.getData("text/plain");
+        if (!dataStr) return;
+        
+        try {
+            const { sourceQid, taskId } = JSON.parse(dataStr);
+            // 找到目标象限的ID (可能是容器本身，也可能是内部的卡片)
+            let target = ev.target;
+            while (target && !target.classList.contains('task-list')) {
+                target = target.parentElement;
+            }
+            if (!target) return;
+            
+            const targetQid = target.id;
+            
+            if (sourceQid !== targetQid) {
+                // 从源移除
+                const taskIndex = appData.quadrants[sourceQid].findIndex(t => t.id === taskId);
+                if (taskIndex > -1) {
+                    const task = appData.quadrants[sourceQid].splice(taskIndex, 1)[0];
+                    // 添加到目标
+                    appData.quadrants[targetQid].push(task);
+                    saveData();
+                    renderQuadrants();
+                }
+            }
+        } catch (e) {
+            console.error("Drop error", e);
+        }
+    }
+
+    // --- KISS模型逻辑 ---
+    function renderKiss() {
+        const categories = ['k-keep', 'k-improve', 'k-start', 'k-stop'];
+        categories.forEach(cId => {
+            const container = document.getElementById(cId);
+            container.innerHTML = '';
+            appData.kiss[cId].forEach(item => {
+                const div = document.createElement('div');
+                div.className = `kiss-item ${item.checked ? 'checked' : ''}`;
+                
+                let checkedAttr = item.checked ? 'checked' : '';
+                div.innerHTML = `
+                    <input type="checkbox" class="kiss-checkbox" ${checkedAttr} onchange="toggleKissItem('${cId}', '${item.id}', this.checked)">
+                    <div class="kiss-text" contenteditable="true" onblur="updateKissItem('${cId}', '${item.id}', this.innerText)">${escapeHTML(item.text)}</div>
+                    <button class="delete-btn" onclick="deleteKissItem('${cId}', '${item.id}')" title="删除条目">🗑️</button>
+                `;
+                container.appendChild(div);
+            });
+        });
+    }
+
+    function handleKissEnter(ev, cId) {
+        if (ev.key === 'Enter') {
+            addKissItem(cId);
+        }
+    }
+
+    function addKissItem(cId) {
+        const input = document.getElementById(`input-${cId}`);
+        const text = input.value.trim();
+        if (text) {
+            appData.kiss[cId].push({
+                id: 'k_' + Date.now(),
+                text: text,
+                checked: false
+            });
+            input.value = '';
+            saveData();
+            renderKiss();
+        }
+    }
+
+    function updateKissItem(cId, itemId, newText) {
+        const item = appData.kiss[cId].find(i => i.id === itemId);
+        if (item) {
+            item.text = newText;
+            saveData();
+        }
+    }
+
+    function toggleKissItem(cId, itemId, isChecked) {
+        const item = appData.kiss[cId].find(i => i.id === itemId);
+        if (item) {
+            item.checked = isChecked;
+            saveData();
+            renderKiss(); // 重新渲染以更新样式
+        }
+    }
+
+    function deleteKissItem(cId, itemId) {
+        appData.kiss[cId] = appData.kiss[cId].filter(i => i.id !== itemId);
+        saveData();
+        renderKiss();
+    }
+
+    // --- AI 点评逻辑 (模拟) ---
+    function generateAIReview(type) {
+        const reviewBox = document.getElementById(`${type}-ai-review`);
+        const contentBox = document.getElementById(`${type}-ai-content`);
+        
+        reviewBox.style.display = 'block';
+        contentBox.innerHTML = '<span style="color:#888;">正在分析数据，生成点评中... ⏳</span>';
+
+        // 模拟网络延迟
+        setTimeout(() => {
+            let reviewText = '';
+            
+            if (type === 'quadrant') {
+                const q1 = appData.quadrants['q-tl']; // 重要不紧急
+                const q2 = appData.quadrants['q-tr']; // 重要紧急
+                const q3 = appData.quadrants['q-bl']; // 不重要不紧急
+                const q4 = appData.quadrants['q-br']; // 不重要紧急
+                const allTasks = [...q1, ...q2, ...q3, ...q4];
+
+                if (allTasks.length === 0) {
+                    reviewText = "📝 **当前看板为空**\n建议先添加一些任务，AI才能为您提供有效的分析和建议哦！";
+                } else {
+                    // 1. 问题诊断与归因
+                    let diagnosis = "🔍 **1. 问题诊断与归因**\n";
+                    // 2. 可操作的行动建议
+                    let actionAdvice = "🛠️ **2. 可操作的行动建议**\n";
+                    
+                    // 关键词分析
+                    const keywords = {
+                        '学习': { count: 0, inQ2: 0, inQ1: 0 },
+                        '会议': { count: 0, inQ2: 0, inQ3: 0, inQ4: 0 },
+                        '邮件': { count: 0, inQ2: 0, inQ4: 0 },
+                        '运动': { count: 0, inQ1: 0, inQ2: 0 },
+                        '报告': { count: 0, inQ2: 0 }
+                    };
+
+                    allTasks.forEach(task => {
+                        const text = (task.title + " " + task.desc).toLowerCase();
+                        for (let kw in keywords) {
+                            if (text.includes(kw)) {
+                                keywords[kw].count++;
+                                if (q2.find(t => t.id === task.id)) keywords[kw].inQ2++;
+                                if (q1.find(t => t.id === task.id)) keywords[kw].inQ1++;
+                                if (q3.find(t => t.id === task.id)) keywords[kw].inQ3++;
+                                if (q4.find(t => t.id === task.id)) keywords[kw].inQ4++;
+                            }
+                        }
+                    });
+
+                    let hasIssue = false;
+
+                    if (keywords['学习'].inQ2 > 0) {
+                        diagnosis += "• 您的学习任务集中在‘重要且紧急’，这通常是拖延导致——原本应提前规划的学习被拖成了临时突击。\n";
+                        actionAdvice += "• 将学习类任务从‘重要且紧急’移至‘重要不紧急’，并将其拆解为每天固定时段（如早晨）学习30分钟。\n";
+                        hasIssue = true;
+                    }
+                    if (keywords['会议'].inQ3 > 0 || keywords['会议'].inQ4 > 0) {
+                        diagnosis += "• 您有较多会议处于不重要象限，说明您的时间可能正在被低效的沟通挤占。\n";
+                        actionAdvice += "• 拒绝‘不重要不紧急’的会议，或要求对方仅提供会议纪要；将‘不重要但紧急’的会议委派给相关同事参与。\n";
+                        hasIssue = true;
+                    }
+                    if (keywords['运动'].count === 0) {
+                        diagnosis += "• 您的任务列表中缺乏健康/运动类任务，可能说明近期忽略了自我投资和身体管理。\n";
+                        actionAdvice += "• 在‘重要不紧急’象限中添加一项‘每周运动3次’的任务，并设定具体的运动类型和时间。\n";
+                        hasIssue = true;
+                    }
+                    if (q2.length > q1.length && q2.length >= 3) {
+                        diagnosis += "• 您有大量任务堆积在‘重要且紧急’，这表明您可能处于被动应对的‘救火’状态。\n";
+                        actionAdvice += "• 审视‘重要且紧急’中的任务，找出可以提前预防的事项，下次在它们变得紧急前处理掉。\n";
+                        hasIssue = true;
+                    }
+
+                    if (!hasIssue) {
+                        diagnosis += "• 您的任务分布比较健康，没有发现明显的拖延或时间黑洞问题。\n";
+                        actionAdvice += "• 继续保持当前的任务管理习惯，每天早上挑出1-3件最重要的事情优先完成。\n";
+                    }
+
+                    // 3. 整体象限平衡提醒
+                    let balance = "\n⚖️ **3. 整体象限平衡提醒**\n";
+                    const total = allTasks.length;
+                    const q1Pct = Math.round((q1.length / total) * 100);
+                    const q2Pct = Math.round((q2.length / total) * 100);
+                    const q3Pct = Math.round((q3.length / total) * 100);
+                    const q4Pct = Math.round((q4.length / total) * 100);
+                    
+                    if (q2Pct > 50) {
+                        balance += `您‘重要且紧急’的任务占${q2Pct}%，而‘重要不紧急’仅占${q1Pct}%，这提示您需要增加前瞻性规划，否则压力将持续累积。\n`;
+                    } else if (q1Pct > 40) {
+                        balance += `您‘重要不紧急’的任务占${q1Pct}%，说明您非常注重长期价值和规划，这是一个非常健康的时间管理状态！\n`;
+                    } else if (q3Pct + q4Pct > 50) {
+                        balance += `您‘不重要’的任务（左下和右下）占比高达${q3Pct + q4Pct}%，这提示您的大量精力正在被琐事消耗，请务必学会拒绝和委派。\n`;
+                    } else {
+                        balance += `您的任务在各个象限分布较为均匀，请注意保持对‘重要不紧急’象限的持续投入，防止它们演变成紧急任务。\n`;
+                    }
+
+                    // 4. 下一步行动清单
+                    let nextSteps = "\n✅ **4. 下一步行动清单**\n";
+                    nextSteps += "1. 重新评估‘重要且紧急’中的任务，看是否能降级或委派。\n";
+                    nextSteps += "2. 为‘重要不紧急’中的一项任务设定今天的具体执行时间。\n";
+                    if (q3.length > 0) nextSteps += "3. 尝试删除或无限期推迟一项‘不重要不紧急’的任务。\n";
+
+                    // 5. 正向反馈与鼓励
+                    let encouragement = "\n🌟 **5. 正向反馈与鼓励**\n";
+                    encouragement += "您已经迈出了时间管理的重要一步！能够清晰地列出任务并进行分类，就意味着您正在重新夺回时间的控制权。继续加油，保持专注，您一定能高效达成目标！💪\n";
+
+                    reviewText = diagnosis + "\n" + actionAdvice + balance + nextSteps + encouragement;
+                }
+            } else if (type === 'kiss') {
+                const keep = appData.kiss['k-keep'];
+                const improve = appData.kiss['k-improve'];
+                const start = appData.kiss['k-start'];
+                const stop = appData.kiss['k-stop'];
+                const allItems = [...keep, ...improve, ...start, ...stop];
+
+                if (allItems.length === 0) {
+                    reviewText = "📝 **当前复盘为空**\n请添加一些复盘条目，AI将为您分析您的成长轨迹！";
+                } else {
+                    // 1. 问题诊断与归因
+                    let diagnosis = "🔍 **1. 问题诊断与归因**\n";
+                    // 2. 可操作的行动建议
+                    let actionAdvice = "🛠️ **2. 可操作的行动建议**\n";
+                    
+                    const textContent = {
+                        keep: keep.map(i => i.text.toLowerCase()).join(' '),
+                        improve: improve.map(i => i.text.toLowerCase()).join(' '),
+                        start: start.map(i => i.text.toLowerCase()).join(' '),
+                        stop: stop.map(i => i.text.toLowerCase()).join(' ')
+                    };
+
+                    let hasIssue = false;
+
+                    if (textContent.keep.includes('复盘') || textContent.keep.includes('总结')) {
+                        diagnosis += "• Keep中包含复盘/总结习惯，说明您具备良好的自我反思意识。\n";
+                        actionAdvice += "• 制定可执行的下一步计划，将复盘得出的结论直接转化为Start中的具体行动。\n";
+                        hasIssue = true;
+                    }
+                    if (textContent.stop.includes('手机') || textContent.stop.includes('熬夜') || textContent.stop.includes('短视频')) {
+                        diagnosis += "• Stop中出现了手机/熬夜等习惯，这通常源于睡前缺乏放松仪式感或自控力疲劳。\n";
+                        actionAdvice += "• 睡前1小时将手机放到客厅充电，用阅读纸质书或冥想代替睡前刷手机。\n";
+                        hasIssue = true;
+                    }
+                    if (textContent.improve.includes('效率') || textContent.improve.includes('时间')) {
+                        diagnosis += "• Improve中提到效率问题，可能是因为工作时经常被打断或缺乏专注技巧。\n";
+                        actionAdvice += "• 尝试使用‘番茄工作法’（专注25分钟，休息5分钟），并在Keep中记录每天完成的番茄钟数量。\n";
+                        hasIssue = true;
+                    }
+                    if (start.length > 0 && keep.length === 0) {
+                        diagnosis += "• 您有很多新的Start计划，但Keep为空，这可能意味着您急于求变而忽略了肯定现有的成绩。\n";
+                        actionAdvice += "• 回顾过去一周，找出至少一件做得好的小事，补充到Keep中，给自己正向反馈。\n";
+                        hasIssue = true;
+                    }
+                    if (stop.length > 3) {
+                        diagnosis += "• 您列出了较多需要Stop的习惯，这反映了您强烈的改变意愿，但同时改变多项习惯极易导致意志力耗竭。\n";
+                        actionAdvice += "• 挑选1个对您影响最大的坏习惯优先攻克，将其他的暂时移出Stop列表，循序渐进。\n";
+                        hasIssue = true;
+                    }
+
+                    if (!hasIssue) {
+                        diagnosis += "• 您的复盘内容非常具体，展现了清晰的自我认知和改进方向。\n";
+                        actionAdvice += "• 将Improve和Start中的条目转化为带有时间节点的具体任务，放入四象限看板中执行。\n";
+                    }
+
+                    // 3. 整体平衡提醒
+                    let balance = "\n⚖️ **3. 整体复盘平衡提醒**\n";
+                    const total = allItems.length;
+                    const keepPct = Math.round((keep.length / total) * 100);
+                    const stopPct = Math.round((stop.length / total) * 100);
+                    
+                    if (20 >= keepPct) {
+                        balance += `您的‘Keep(保持)’项占比偏低（${keepPct}%），这提示您需要更多地关注和固化自己的优势与好习惯，不要只盯着不足。\n`;
+                    } else if (stopPct >= 40) {
+                        balance += `您的‘Stop(停止)’项占比高达${stopPct}%，这提示您可能对自己过于严苛。请注意平衡，增加一些正向的‘Start’尝试。\n`;
+                    } else if (start.length === 0 && improve.length === 0) {
+                        balance += `您目前没有‘Start’或‘Improve’项，这提示您可能处于舒适区，建议寻找一些小的突破口来促进个人成长。\n`;
+                    } else {
+                        balance += `您的复盘在四个维度上分布较为均衡，既有对过去的肯定与反思，也有对未来的规划，请保持这种健康的复盘节奏。\n`;
+                    }
+
+                    // 4. 下一步行动清单
+                    let nextSteps = "\n✅ **4. 下一步行动清单**\n";
+                    nextSteps += "1. 挑选一项Start计划，在今天之内完成它的‘第一步’。\n";
+                    nextSteps += "2. 针对一项Stop习惯，设置一个物理障碍（如卸载App、远离诱惑源）。\n";
+                    nextSteps += "3. 将Keep中的一项好习惯设定为每日打卡目标。\n";
+
+                    // 5. 正向反馈与鼓励
+                    let encouragement = "\n🌟 **5. 正向反馈与鼓励**\n";
+                    encouragement += "定期复盘是拉开人与人差距的关键习惯！您能坦诚地面对自己的不足，并积极寻找改进方法，这本身就是一种巨大的进步。相信通过不断的KISS复盘，您会遇见更好的自己！✨\n";
+
+                    reviewText = diagnosis + "\n" + actionAdvice + balance + nextSteps + encouragement;
+                }
+            }
+
+            // 将换行符转换为 <br> 以在 HTML 中显示
+            contentBox.innerHTML = reviewText.replace(/\n/g, '<br>');
+        }, 800); // 模拟800ms延迟
+    }
+
+    function closeAIReview(type) {
+        document.getElementById(`${type}-ai-review`).style.display = 'none';
+    }
+
+    // --- 同步逻辑 ---
+    function showSyncModal() {
+        document.getElementById('sync-modal').style.display = 'flex';
+        updateSyncUI();
+    }
+
+    function closeSyncModal() {
+        document.getElementById('sync-modal').style.display = 'none';
+    }
+
+    function updateSyncUI() {
+        const statusDisplay = document.getElementById('sync-status-display');
+        const activePanel = document.getElementById('active-sync-panel');
+        const codeDisplay = document.getElementById('current-sync-code');
+        
+        if (currentSyncCode) {
+            statusDisplay.innerHTML = `🟢 已连接同步 (代码: <strong>${currentSyncCode}</strong>)`;
+            statusDisplay.style.backgroundColor = '#e8f5e9';
+            statusDisplay.style.color = '#2e7d32';
+            activePanel.style.display = 'block';
+            codeDisplay.innerText = currentSyncCode;
+        } else {
+            statusDisplay.innerHTML = `⚪ 未连接同步 (数据仅保存在本地)`;
+            statusDisplay.style.backgroundColor = '#f5f5f5';
+            statusDisplay.style.color = '#666';
+            activePanel.style.display = 'none';
+        }
+    }
+
+    async function generateSyncCode() {
+        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+        try {
+            const res = await fetch(`/api/sync/${code}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: appData })
+            });
+            if (res.ok) {
+                currentSyncCode = code;
+                localStorage.setItem('efficiencySyncCode', code);
+                updateSyncUI();
+                alert(`同步码生成成功：${code}\n请在其他设备输入此码以同步数据。`);
+            }
+        } catch (e) {
+            alert('生成同步码失败，请检查网络连接。');
+        }
+    }
+
+    async function connectSyncCode() {
+        const code = document.getElementById('sync-code-input').value.trim().toUpperCase();
+        if (!code) return alert('请输入同步码');
+        
+        try {
+            const res = await fetch(`/api/sync/${code}`);
+            const result = await res.json();
+            if (result.success) {
+                appData = result.data;
+                currentSyncCode = code;
+                localStorage.setItem('efficiencySyncCode', code);
+                saveData(false); // don't push again
+                renderAll();
+                updateSyncUI();
+                alert('连接成功！数据已同步。');
+            } else {
+                alert('同步码无效或不存在。');
+            }
+        } catch (e) {
+            alert('连接失败，请检查网络连接。');
+        }
+    }
+
+    async function pushSyncData() {
+        if (!currentSyncCode) return;
+        try {
+            await fetch(`/api/sync/${currentSyncCode}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: appData })
+            });
+        } catch (e) {
+            console.error('Auto sync failed', e);
+        }
+    }
+
+    async function pullSyncData() {
+        if (!currentSyncCode) return;
+        try {
+            const res = await fetch(`/api/sync/${currentSyncCode}`);
+            const result = await res.json();
+            if (result.success) {
+                appData = result.data;
+                saveData(false);
+                renderAll();
+                alert('数据已从云端更新。');
+            }
+        } catch (e) {
+            alert('下载数据失败。');
+        }
+    }
+
+    function disconnectSync() {
+        if (confirm('确定要断开同步吗？断开后数据将仅保存在本地。')) {
+            currentSyncCode = null;
+            localStorage.removeItem('efficiencySyncCode');
+            updateSyncUI();
+        }
+    }
+
+    // --- 页面加载完成执行 ---
+    window.onload = initData;
+
+    // --- 日志系统 (IndexedDB) ---
+    let db;
+    let currentLogDate = ''; // YYYY-MM-DD
+    let expandedNodes = new Set(); // 记录展开的树节点 (YYYY 或 YYYY-MM)
+
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('DailyLogsDB', 1);
+            request.onerror = (event) => reject(event.target.error);
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                resolve(db);
+            };
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('logs')) {
+                    db.createObjectStore('logs', { keyPath: 'date' });
+                }
+            };
+        });
+    }
+
+    function formatDate(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function getDisplayDate(dateStr) {
+        const [y, m, d] = dateStr.split('-');
+        return `${y}年${m}月${d}日`;
+    }
+
+    async function initLogs() {
+        await initDB();
+        const today = new Date();
+        currentLogDate = formatDate(today);
+        
+        // 默认展开当前年月
+        const [y, m] = currentLogDate.split('-');
+        expandedNodes.add(y);
+        expandedNodes.add(`${y}-${m}`);
+
+        await loadLog(currentLogDate);
+        await renderLogsTree();
+    }
+
+    async function loadLog(dateStr) {
+        currentLogDate = dateStr;
+        document.getElementById('current-log-date').innerText = getDisplayDate(dateStr);
+        
+        return new Promise((resolve) => {
+            const transaction = db.transaction(['logs'], 'readonly');
+            const store = transaction.objectStore('logs');
+            const request = store.get(dateStr);
+            
+            request.onsuccess = (event) => {
+                const data = event.target.result;
+                document.getElementById('log-happy').value = data ? data.happy : '';
+                document.getElementById('log-fulfilling').value = data ? data.fulfilling : '';
+                document.getElementById('log-grateful').value = data ? data.grateful : '';
+                document.getElementById('log-improve').value = data ? data.improve : '';
+                document.getElementById('log-thoughts').value = data ? data.thoughts : '';
+                
+                // 更新树的高亮
+                document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('active'));
+                const activeEl = document.getElementById(`tree-node-${dateStr}`);
+                if (activeEl) activeEl.classList.add('active');
+                
+                resolve();
+            };
+        });
+    }
+
+    async function saveLog() {
+        const data = {
+            date: currentLogDate,
+            happy: document.getElementById('log-happy').value,
+            fulfilling: document.getElementById('log-fulfilling').value,
+            grateful: document.getElementById('log-grateful').value,
+            improve: document.getElementById('log-improve').value,
+            thoughts: document.getElementById('log-thoughts').value
+        };
+
+        try {
+            await new Promise((resolve, reject) => {
+                const transaction = db.transaction(['logs'], 'readwrite');
+                const store = transaction.objectStore('logs');
+                const request = store.put(data);
+                
+                request.onsuccess = () => resolve();
+                request.onerror = (e) => reject(e.target.error);
+            });
+            
+            alert('保存成功！');
+            await renderLogsTree();
+        } catch (e) {
+            console.error('保存失败:', e);
+            alert('保存失败，请重试');
+        }
+    }
+
+    async function deleteLog() {
+        if (!confirm('确定要删除当天的日志吗？')) return;
+
+        try {
+            await new Promise((resolve, reject) => {
+                const transaction = db.transaction(['logs'], 'readwrite');
+                const store = transaction.objectStore('logs');
+                const request = store.delete(currentLogDate);
+                
+                request.onsuccess = () => resolve();
+                request.onerror = (e) => reject(e.target.error);
+            });
+            
+            document.getElementById('log-happy').value = '';
+            document.getElementById('log-fulfilling').value = '';
+            document.getElementById('log-grateful').value = '';
+            document.getElementById('log-improve').value = '';
+            document.getElementById('log-thoughts').value = '';
+            
+            alert('删除成功！');
+            await renderLogsTree();
+        } catch (e) {
+            console.error('删除失败:', e);
+            alert('删除失败，请重试');
+        }
+    }
+
+    function changeLogDate(offset) {
+        const date = new Date(currentLogDate);
+        date.setDate(date.getDate() + offset);
+        const newDateStr = formatDate(date);
+        
+        const [y, m] = newDateStr.split('-');
+        expandedNodes.add(y);
+        expandedNodes.add(`${y}-${m}`);
+        
+        loadLog(newDateStr);
+        renderLogsTree(); // 重新渲染以更新展开状态
+    }
+
+    async function getAllLogs() {
+        return new Promise((resolve) => {
+            const transaction = db.transaction(['logs'], 'readonly');
+            const store = transaction.objectStore('logs');
+            const request = store.getAll();
+            request.onsuccess = (event) => {
+                resolve(event.target.result);
+            };
+        });
+    }
+
+    async function renderLogsTree() {
+        const logs = await getAllLogs();
+        const treeData = {};
+        
+        // 构建树结构
+        logs.forEach(log => {
+            const [y, m, d] = log.date.split('-');
+            if (!treeData[y]) treeData[y] = {};
+            if (!treeData[y][m]) treeData[y][m] = [];
+            treeData[y][m].push(d);
+        });
+
+        const treeContainer = document.getElementById('logs-tree');
+        treeContainer.innerHTML = '';
+
+        // 排序年份 (升序)
+        const years = Object.keys(treeData).sort((a, b) => a - b);
+        
+        years.forEach(y => {
+            const yearDiv = document.createElement('div');
+            const isYearExpanded = expandedNodes.has(y);
+            
+            yearDiv.innerHTML = `
+                <div class="tree-item" onclick="toggleTreeNode('${y}')">
+                    <span class="tree-toggle">${isYearExpanded ? '▼' : '▶'}</span> ${y}年
+                </div>
+                <div class="tree-node ${isYearExpanded ? 'expanded' : ''}" id="tree-children-${y}"></div>
+            `;
+            treeContainer.appendChild(yearDiv);
+            
+            const monthsContainer = yearDiv.querySelector('.tree-node');
+            
+            // 排序月份 (升序)
+            const months = Object.keys(treeData[y]).sort((a, b) => a - b);
+            months.forEach(m => {
+                const monthKey = `${y}-${m}`;
+                const isMonthExpanded = expandedNodes.has(monthKey);
+                const monthDiv = document.createElement('div');
+                
+                monthDiv.innerHTML = `
+                    <div class="tree-item" onclick="toggleTreeNode('${monthKey}')">
+                        <span class="tree-toggle">${isMonthExpanded ? '▼' : '▶'}</span> ${m}月
+                    </div>
+                    <div class="tree-node ${isMonthExpanded ? 'expanded' : ''}" id="tree-children-${monthKey}"></div>
+                `;
+                monthsContainer.appendChild(monthDiv);
+                
+                const daysContainer = monthDiv.querySelector('.tree-node');
+                
+                // 排序日期 (升序)
+                const days = treeData[y][m].sort((a, b) => a - b);
+                days.forEach(d => {
+                    const dateStr = `${y}-${m}-${d}`;
+                    const dayDiv = document.createElement('div');
+                    const isActive = dateStr === currentLogDate ? 'active' : '';
+                    
+                    dayDiv.innerHTML = `
+                        <div class="tree-item ${isActive}" id="tree-node-${dateStr}" onclick="loadLog('${dateStr}')">
+                            <span class="tree-toggle"></span> ${d}日
+                        </div>
+                    `;
+                    daysContainer.appendChild(dayDiv);
+                });
+            });
+        });
+    }
+
+    window.toggleTreeNode = function(nodeId) {
+        if (expandedNodes.has(nodeId)) {
+            expandedNodes.delete(nodeId);
+        } else {
+            expandedNodes.add(nodeId);
+        }
+        renderLogsTree();
+    };
+
+    // --- 导出功能 ---
+    function downloadFile(content, filename, type) {
+        const blob = new Blob([content], { type: type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // --- 导入逻辑 ---
+    async function importLogs(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            if (file.name.endsWith('.md')) {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const arrayBuffer = e.target.result;
+                        const uint8Array = new Uint8Array(arrayBuffer);
+                        
+                        // 简单的编码检测：判断是否为 UTF-8
+                        let isUtf8 = true;
+                        let i = 0;
+                        while (i !== uint8Array.length) {
+                            let byte = uint8Array[i];
+                            if (0x7F >= byte) {
+                                i++;
+                            } else if (byte >= 0xC2 && 0xDF >= byte) {
+                                if (i + 1 !== uint8Array.length && (uint8Array[i + 1] & 0xC0) === 0x80) {
+                                    i += 2;
+                                } else {
+                                    isUtf8 = false; break;
+                                }
+                            } else if (byte >= 0xE0 && 0xEF >= byte) {
+                                if (i + 2 !== uint8Array.length && (uint8Array[i + 1] & 0xC0) === 0x80 && (uint8Array[i + 2] & 0xC0) === 0x80) {
+                                    i += 3;
+                                } else {
+                                    isUtf8 = false; break;
+                                }
+                            } else if (byte >= 0xF0 && 0xF4 >= byte) {
+                                if (i + 3 !== uint8Array.length && (uint8Array[i + 1] & 0xC0) === 0x80 && (uint8Array[i + 2] & 0xC0) === 0x80 && (uint8Array[i + 3] & 0xC0) === 0x80) {
+                                    i += 4;
+                                } else {
+                                    isUtf8 = false; break;
+                                }
+                            } else {
+                                isUtf8 = false; break;
+                            }
+                        }
+
+                        let text;
+                        if (isUtf8) {
+                            text = new TextDecoder('utf-8').decode(arrayBuffer);
+                        } else {
+                            text = new TextDecoder('gbk').decode(arrayBuffer); // 假设非 UTF-8 就是 GBK
+                        }
+
+                        const logs = parseTextToLogs(text);
+                        if (logs.length > 0) {
+                            await saveImportedLogs(logs);
+                        } else {
+                            alert('未能从MD文件中解析出有效的日志格式。请确保包含# YYYY-MM-DD格式的日期。');
+                        }
+                    } catch (error) {
+                        console.error('MD导入失败:', error);
+                        alert('导入失败，请检查MD文件格式是否正确。');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (file.name.endsWith('.docx')) {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const arrayBuffer = e.target.result;
+                        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                        const text = result.value;
+                        const logs = parseTextToLogs(text);
+                        if (logs.length > 0) {
+                            await saveImportedLogs(logs);
+                        } else {
+                            alert('未能从DOCX文件中解析出有效的日志格式。请确保包含YYYY-MM-DD格式的日期。');
+                        }
+                    } catch (error) {
+                        console.error('DOCX导入失败:', error);
+                        alert('导入失败，无法解析DOCX文件。');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        } finally {
+            event.target.value = '';
+        }
+    }
+
+    function parseTextToLogs(content) {
+        // 支持 # 2026-02-24 或 2026-02-24
+        const dateRegex = /(?:#\s*)?(\d{4}-\d{2}-\d{2})/g;
+        let dates = [];
+        let match;
+        while ((match = dateRegex.exec(content)) !== null) {
+            dates.push({
+                date: match[1],
+                index: match.index
+            });
+        }
+        
+        const logs = [];
+        for (let i = 0; i !== dates.length; i++) {
+            const current = dates[i];
+            const start = current.index + (match ? match[0].length : 10); // approximate length
+            const end = (i + 1 !== dates.length) ? dates[i + 1].index : content.length;
+            const textBlock = content.substring(start, end).trim();
+            
+            const logData = parseLogText(textBlock);
+            logData.date = current.date;
+            logs.push(logData);
+        }
+        return logs;
+    }
+
+    function parseLogText(text) {
+        const logData = { happy: '', fulfilling: '', grateful: '', improve: '', thoughts: '' };
+        
+        const keywords = [
+            { key: 'happy', regex: /(?:-\s*\*\*开心的事\*\*[：:]|开心的事\s*[：:]|【[^】]*开心[^】]*】)\s*/ },
+            { key: 'fulfilling', regex: /(?:-\s*\*\*充实的事\*\*[：:]|充实的事\s*[：:]|【[^】]*充实[^】]*】)\s*/ },
+            { key: 'improve', regex: /(?:-\s*\*\*改进的事\*\*[：:]|改进的事\s*[：:]|【[^】]*改进[^】]*】)\s*/ },
+            { key: 'grateful', regex: /(?:-\s*\*\*感谢的人\*\*[：:]|感谢的人\s*[：:]|【[^】]*感谢[^】]*】)\s*/ },
+            { key: 'thoughts', regex: /(?:-\s*\*\*今日思考\*\*[：:]|今日思考\s*[：:]|【[^】]*思考[^】]*】)\s*/ }
+        ];
+
+        let matches = [];
+        keywords.forEach(kw => {
+            const match = text.match(kw.regex);
+            if (match) {
+                matches.push({
+                    key: kw.key,
+                    index: match.index,
+                    length: match[0].length
+                });
+            }
+        });
+
+        matches.sort((a, b) => a.index - b.index);
+
+        if (matches.length === 0) {
+            let cleanText = text.replace(/^[:：\s]+/, '');
+            if (cleanText) logData.thoughts = cleanText;
+            return logData;
+        }
+
+        for (let i = 0; i !== matches.length; i++) {
+            const current = matches[i];
+            const start = current.index + current.length;
+            const end = (i + 1 !== matches.length) ? matches[i + 1].index : text.length;
+            logData[current.key] = text.substring(start, end).trim();
+        }
+
+        if (matches[0].index > 0) {
+            const prefix = text.substring(0, matches[0].index).replace(/^[:：\s]+/, '').trim();
+            if (prefix) {
+                logData.thoughts = prefix + (logData.thoughts ? '\n' + logData.thoughts : '');
+            }
+        }
+
+        return logData;
+    }
+
+    async function saveImportedLogs(logs) {
+        let importedCount = 0;
+        for (const log of logs) {
+            if (log.date) {
+                await new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['logs'], 'readwrite');
+                    const store = transaction.objectStore('logs');
+                    const request = store.put(log);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject();
+                });
+                importedCount++;
+            }
+        }
+        alert(`成功导入 ${importedCount} 条日志！`);
+        await renderLogsTree();
+        await loadLog(currentLogDate);
+    }
+
+    async function exportAllLogs() {
+        const btn = document.querySelector('.dropdown-toggle');
+        const originalText = btn.innerText;
+        btn.innerText = '正在生成...';
+        
+        try {
+            const logs = await getAllLogs();
+            const json = JSON.stringify(logs, null, 2);
+            const today = formatDate(new Date());
+            downloadFile(json, `daily_logs_${today}.json`, 'application/json');
+        } finally {
+            btn.innerText = originalText;
+        }
+    }
+
+    function showExportModulesModal() {
+        document.getElementById('export-modal').style.display = 'flex';
+        validateExportBtn();
+    }
+
+    function closeExportModal() {
+        document.getElementById('export-modal').style.display = 'none';
+    }
+
+    function toggleDateRange(show) {
+        document.getElementById('custom-date-range').style.display = show ? 'flex' : 'none';
+        validateExportBtn();
+    }
+
+    function validateExportBtn() {
+        const btn = document.getElementById('export-btn');
+        const isCustom = document.querySelector('input[name="export-range"][value="custom"]').checked;
+        
+        if (isCustom) {
+            const start = document.getElementById('export-start-date').value;
+            const end = document.getElementById('export-end-date').value;
+            if (!start || !end) {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+                return;
+            }
+        }
+        
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+    }
+
+    async function exportSelectedModules() {
+        const btn = document.getElementById('export-btn');
+        if (btn.disabled) {
+            alert('请完整填写起止日期！');
+            return;
+        }
+
+        const originalText = btn.innerText;
+        btn.innerText = '正在生成...';
+        
+        try {
+            const allModules = [
+                { id: 'exp-happy', key: 'happy', title: '开心的事', filename: 'happy_moments' },
+                { id: 'exp-fulfilling', key: 'fulfilling', title: '充实的事', filename: 'fulfilling_moments' },
+                { id: 'exp-grateful', key: 'grateful', title: '感谢的人', filename: 'grateful_moments' },
+                { id: 'exp-improve', key: 'improve', title: '改进的事', filename: 'improve_moments' },
+                { id: 'exp-thoughts', key: 'thoughts', title: '今日思考', filename: 'daily_thoughts' }
+            ];
+            
+            const modules = allModules.filter(m => document.getElementById(m.id).checked);
+
+            if (modules.length === 0) {
+                alert('请至少选择一个模块！');
+                return;
+            }
+
+            let logs = await getAllLogs();
+            
+            // 过滤日期范围
+            const isCustom = document.querySelector('input[name="export-range"][value="custom"]').checked;
+            let startDateStr = '';
+            let endDateStr = '';
+            
+            if (isCustom) {
+                startDateStr = document.getElementById('export-start-date').value;
+                endDateStr = document.getElementById('export-end-date').value;
+                
+                if (startDateStr > endDateStr) {
+                    alert('起始日期不能晚于结束日期！');
+                    return;
+                }
+                
+                logs = logs.filter(log => log.date >= startDateStr && endDateStr >= log.date);
+            }
+
+            if (logs.length === 0) {
+                alert('所选范围内无日志！');
+                return;
+            }
+
+            // 按日期升序排列导出
+            logs.sort((a, b) => a.date.localeCompare(b.date));
+
+            let content = '';
+            logs.forEach(log => {
+                let hasContent = false;
+                let logContent = `## ${log.date}\n\n`;
+                
+                modules.forEach(m => {
+                    if (log[m.key] && log[m.key].trim() !== '') {
+                        logContent += `- **${m.title}**：${log[m.key]}\n`;
+                        hasContent = true;
+                    }
+                });
+
+                if (hasContent) {
+                    content += logContent + '\n';
+                }
+            });
+
+            if (content === '') {
+                alert('选中的模块中没有数据！');
+                return;
+            }
+
+            let filename = 'logs_all.md';
+            if (isCustom) {
+                filename = `logs_${startDateStr}_to_${endDateStr}.md`;
+            }
+
+            downloadFile(content, filename, 'text/markdown');
+            closeExportModal();
+        } finally {
+            btn.innerText = originalText;
+        }
+    }
+</script>
+
+</body>
+</html>
