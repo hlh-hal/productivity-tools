@@ -921,6 +921,7 @@
     <!-- 引入 mobile-drag-drop polyfill 以支持移动端拖拽 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
     <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
+    <script type="module" src="/src/firebase.js"></script>
 </head>
 <body>
 
@@ -953,6 +954,9 @@
             <span>🍅</span> 番茄钟
         </button>
         <div class="spacer"></div>
+        <div class="reset-btn-container" style="margin-bottom: 10px;">
+            <button class="btn btn-outline" style="color: var(--primary-color); border-color: var(--primary-color);" onclick="openAuthModal()" id="auth-btn">☁️ 云端同步</button>
+        </div>
         <div class="reset-btn-container">
             <button class="btn btn-outline" onclick="resetData()">↺ 重置为示例</button>
         </div>
@@ -1445,6 +1449,47 @@
                 </div>
 
                 <button id="export-btn" class="btn btn-primary" style="width: 100%;" onclick="exportSelectedModules()">生成并下载</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase 登录/注册弹窗 -->
+    <div id="auth-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="auth-title">☁️ 云端账号登录</h3>
+                <button class="close-btn" onclick="closeAuthModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="auth-form-container">
+                    <div class="log-field">
+                        <label>邮箱：</label>
+                        <input type="email" id="auth-email" placeholder="输入邮箱地址" style="width: 100%; padding: 10px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--card-bg); color: var(--text-main);">
+                    </div>
+                    <div class="log-field" style="margin-top: 15px;">
+                        <label>密码：</label>
+                        <input type="password" id="auth-password" placeholder="输入密码 (至少6位)" style="width: 100%; padding: 10px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--card-bg); color: var(--text-main);">
+                    </div>
+                    <div style="margin-top: 20px; display: flex; gap: 10px;">
+                        <button class="btn btn-primary" style="flex: 1;" onclick="handleLogin()">登录</button>
+                        <button class="btn btn-outline" style="flex: 1;" onclick="handleRegister()">注册</button>
+                    </div>
+                    <p style="margin-top: 15px; font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+                        注册即代表数据将同步至 Firebase 云端数据库。
+                    </p>
+                </div>
+
+                <div id="auth-user-container" style="display: none; text-align: center;">
+                    <div style="margin-bottom: 20px;">
+                        <p style="color: var(--text-muted); margin-bottom: 5px;">当前登录账号：</p>
+                        <strong id="auth-current-user" style="color: var(--primary-color); font-size: 1.1rem;"></strong>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button class="btn btn-primary" onclick="syncDataToCloud()">⬆️ 将本地数据同步到云端</button>
+                        <button class="btn btn-outline" onclick="syncDataFromCloud()">⬇️ 从云端恢复数据到本地</button>
+                        <button class="btn btn-outline" style="color: #ff6b6b; border-color: #ff6b6b; margin-top: 10px;" onclick="handleLogout()">退出登录</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -3277,6 +3322,188 @@
     }
 
     window.onload = initData;
+
+    // --- Firebase 逻辑 ---
+    let currentUser = null;
+
+    window.addEventListener('firebase-ready', () => {
+        const { onAuthStateChanged } = window.firebaseMethods;
+        onAuthStateChanged(window.firebaseAuth, (user) => {
+            currentUser = user;
+            const authBtn = document.getElementById('auth-btn');
+            if (user) {
+                authBtn.innerText = '☁️ 已登录同步';
+                authBtn.style.background = 'var(--primary-color)';
+                authBtn.style.color = 'white';
+                document.getElementById('auth-form-container').style.display = 'none';
+                document.getElementById('auth-user-container').style.display = 'block';
+                document.getElementById('auth-current-user').innerText = user.email;
+                document.getElementById('auth-title').innerText = '云端同步管理';
+            } else {
+                authBtn.innerText = '☁️ 云端同步';
+                authBtn.style.background = 'transparent';
+                authBtn.style.color = 'var(--primary-color)';
+                document.getElementById('auth-form-container').style.display = 'block';
+                document.getElementById('auth-user-container').style.display = 'none';
+                document.getElementById('auth-title').innerText = '云端账号登录';
+            }
+        });
+    });
+
+    function openAuthModal() {
+        document.getElementById('auth-modal').style.display = 'flex';
+    }
+
+    function closeAuthModal() {
+        document.getElementById('auth-modal').style.display = 'none';
+    }
+
+    async function handleRegister() {
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        if (!email || !password) return alert('请输入邮箱和密码');
+        
+        try {
+            const { createUserWithEmailAndPassword } = window.firebaseMethods;
+            await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+            alert('注册成功！');
+        } catch (error) {
+            alert('注册失败: ' + error.message);
+        }
+    }
+
+    async function handleLogin() {
+        const email = document.getElementById('auth-email').value;
+        const password = document.getElementById('auth-password').value;
+        if (!email || !password) return alert('请输入邮箱和密码');
+        
+        try {
+            const { signInWithEmailAndPassword } = window.firebaseMethods;
+            await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+            alert('登录成功！');
+        } catch (error) {
+            alert('登录失败: ' + error.message);
+        }
+    }
+
+    async function handleLogout() {
+        try {
+            const { signOut } = window.firebaseMethods;
+            await signOut(window.firebaseAuth);
+            alert('已退出登录');
+        } catch (error) {
+            alert('退出失败: ' + error.message);
+        }
+    }
+
+    async function syncDataToCloud() {
+        if (!currentUser) return alert('请先登录');
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = '同步中...';
+        btn.disabled = true;
+
+        try {
+            const { doc, setDoc } = window.firebaseMethods;
+            const db = window.firebaseDb;
+            const uid = currentUser.uid;
+
+            // 1. 同步普通数据 (KISS, 四象限等)
+            await setDoc(doc(db, "users", uid), {
+                appData: JSON.stringify(appData),
+                lastSync: Date.now()
+            });
+
+            // 2. 同步日志
+            const allLogs = await getAllLogs();
+            const logsData = {};
+            allLogs.forEach(log => logsData[log.date] = log);
+            await setDoc(doc(db, "users", uid, "data", "logs"), { data: JSON.stringify(logsData) });
+
+            // 3. 同步月志
+            const allMonthly = await getAllMonthlyReviews();
+            const monthlyData = {};
+            allMonthly.forEach(m => monthlyData[m.yearMonth] = m);
+            await setDoc(doc(db, "users", uid, "data", "monthly"), { data: JSON.stringify(monthlyData) });
+
+            // 4. 同步半年复盘
+            const allPeriodic = await getAllPeriodicReviews();
+            const periodicData = {};
+            allPeriodic.forEach(p => periodicData[p.yearPeriod] = p);
+            await setDoc(doc(db, "users", uid, "data", "periodic"), { data: JSON.stringify(periodicData) });
+
+            alert('同步到云端成功！');
+        } catch (error) {
+            console.error(error);
+            alert('同步失败: ' + error.message);
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    async function syncDataFromCloud() {
+        if (!currentUser) return alert('请先登录');
+        if (!confirm('从云端恢复将覆盖本地现有数据，确定要继续吗？')) return;
+        
+        const btn = event.target;
+        const originalText = btn.innerText;
+        btn.innerText = '恢复中...';
+        btn.disabled = true;
+
+        try {
+            const { doc, getDoc } = window.firebaseMethods;
+            const db = window.firebaseDb;
+            const uid = currentUser.uid;
+
+            // 1. 恢复普通数据
+            const userDoc = await getDoc(doc(db, "users", uid));
+            if (userDoc.exists() && userDoc.data().appData) {
+                appData = JSON.parse(userDoc.data().appData);
+                localStorage.setItem('efficiencyAppData', JSON.stringify(appData));
+            }
+
+            // 2. 恢复日志
+            const logsDoc = await getDoc(doc(db, "users", uid, "data", "logs"));
+            if (logsDoc.exists() && logsDoc.data().data) {
+                const logsData = JSON.parse(logsDoc.data().data);
+                for (const key in logsData) {
+                    await new Promise((resolve) => {
+                        const transaction = window.db.transaction(['logs'], 'readwrite');
+                        const store = transaction.objectStore('logs');
+                        store.put(logsData[key]).onsuccess = resolve;
+                    });
+                }
+            }
+
+            // 3. 恢复月志
+            const monthlyDoc = await getDoc(doc(db, "users", uid, "data", "monthly"));
+            if (monthlyDoc.exists() && monthlyDoc.data().data) {
+                const monthlyData = JSON.parse(monthlyDoc.data().data);
+                for (const key in monthlyData) {
+                    await saveMonthlyReviewToDB(monthlyData[key]);
+                }
+            }
+
+            // 4. 恢复半年复盘
+            const periodicDoc = await getDoc(doc(db, "users", uid, "data", "periodic"));
+            if (periodicDoc.exists() && periodicDoc.data().data) {
+                const periodicData = JSON.parse(periodicDoc.data().data);
+                for (const key in periodicData) {
+                    await savePeriodicReviewToDB(periodicData[key]);
+                }
+            }
+
+            alert('从云端恢复成功！页面将刷新。');
+            location.reload();
+        } catch (error) {
+            console.error(error);
+            alert('恢复失败: ' + error.message);
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
 
     // --- 日志系统 (IndexedDB) ---
     let db;
