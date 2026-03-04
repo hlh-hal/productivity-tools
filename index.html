@@ -937,6 +937,9 @@
         <button class="nav-btn" onclick="switchTab('monthly')">
             <span>📅</span> 月志
         </button>
+        <button class="nav-btn" onclick="switchTab('periodic')">
+            <span>📈</span> 半年复盘
+        </button>
         <button class="nav-btn" onclick="switchTab('kiss')">
             <span>🧩</span> KISS模型
         </button>
@@ -992,23 +995,23 @@
                     <div class="logs-body">
                         <div class="log-field">
                             <label>😊 开心的事：</label>
-                            <textarea id="log-happy" placeholder="今天发生了什么开心的事？"></textarea>
+                            <textarea id="log-happy" placeholder="今天发生了什么开心的事？" oninput="autoSaveLog()"></textarea>
                         </div>
                         <div class="log-field">
                             <label>📝 充实的事：</label>
-                            <textarea id="log-fulfilling" placeholder="今天完成了哪些有意义的工作或学习？"></textarea>
+                            <textarea id="log-fulfilling" placeholder="今天完成了哪些有意义的工作或学习？" oninput="autoSaveLog()"></textarea>
                         </div>
                         <div class="log-field">
                             <label>🙏 感谢的人：</label>
-                            <textarea id="log-grateful" placeholder="今天想感谢谁？为什么？"></textarea>
+                            <textarea id="log-grateful" placeholder="今天想感谢谁？为什么？" oninput="autoSaveLog()"></textarea>
                         </div>
                         <div class="log-field">
                             <label>🔧 改进的事：</label>
-                            <textarea id="log-improve" placeholder="今天有哪些可以做得更好的地方？"></textarea>
+                            <textarea id="log-improve" placeholder="今天有哪些可以做得更好的地方？" oninput="autoSaveLog()"></textarea>
                         </div>
                         <div class="log-field">
                             <label>💭 今日思考：</label>
-                            <textarea id="log-thoughts" placeholder="今天的感悟或灵感..."></textarea>
+                            <textarea id="log-thoughts" placeholder="今天的感悟或灵感..." oninput="autoSaveLog()"></textarea>
                         </div>
                     </div>
                 </div>
@@ -1075,27 +1078,118 @@
                     <div class="logs-body" style="flex-grow: 1; overflow-y: auto;">
                         <div class="log-field">
                             <label>📌 回顾目标：</label>
-                            <textarea id="monthly-goal" placeholder="本月的主要目标是什么？完成度如何衡量？"></textarea>
+                            <textarea id="monthly-goal" placeholder="本月的主要目标是什么？完成度如何衡量？" oninput="autoSaveMonthly()"></textarea>
                         </div>
                         <div class="log-field">
                             <label>📊 评估结果：</label>
-                            <textarea id="monthly-result" placeholder="客观完成情况、主观评分、他人反馈..."></textarea>
+                            <textarea id="monthly-result" placeholder="客观完成情况、主观评分、他人反馈..." oninput="autoSaveMonthly()"></textarea>
                         </div>
                         <div class="log-field">
                             <label>✅ 分析原因（正向）：</label>
-                            <textarea id="monthly-good-reason" placeholder="做得好的原因是什么？有什么经验可以复用？"></textarea>
+                            <textarea id="monthly-good-reason" placeholder="做得好的原因是什么？有什么经验可以复用？" oninput="autoSaveMonthly()"></textarea>
                         </div>
                         <div class="log-field">
                             <label>❌ 分析原因（负向）：</label>
-                            <textarea id="monthly-bad-reason" placeholder="未达预期的根本原因是什么？"></textarea>
+                            <textarea id="monthly-bad-reason" placeholder="未达预期的根本原因是什么？" oninput="autoSaveMonthly()"></textarea>
                         </div>
                         <div class="log-field">
                             <label>🔄 重来演练：</label>
-                            <textarea id="monthly-rerun" placeholder="如果重来一次，我会怎么做？哪里需要调整？"></textarea>
+                            <textarea id="monthly-rerun" placeholder="如果重来一次，我会怎么做？哪里需要调整？" oninput="autoSaveMonthly()"></textarea>
                         </div>
                         <div class="log-field">
                             <label>📅 下月规划：</label>
-                            <textarea id="monthly-plan" placeholder="下个月的目标是什么？需要做哪些调整？"></textarea>
+                            <textarea id="monthly-plan" placeholder="下个月的目标是什么？需要做哪些调整？" oninput="autoSaveMonthly()"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 半年复盘视图 -->
+        <div id="periodic-view" class="view-section">
+            <div class="view-header">
+                <h2 class="view-title">半年复盘</h2>
+            </div>
+            <div class="logs-container">
+                <div class="logs-sidebar">
+                    <h3>已存复盘</h3>
+                    <div class="monthly-nav-selectors">
+                        <div class="selector-group">
+                            <label for="periodic-year-select">年份</label>
+                            <select id="periodic-year-select" onchange="onPeriodicYearChange()"></select>
+                        </div>
+                        <div class="selector-group">
+                            <label for="periodic-period-select">阶段</label>
+                            <select id="periodic-period-select" onchange="onPeriodicPeriodChange()"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="logs-editor">
+                    <div class="logs-header">
+                        <div class="logs-date-nav">
+                            <button onclick="changePeriodicDate(-1)">◀</button>
+                            <h2 id="current-periodic-date">加载中...</h2>
+                            <button onclick="changePeriodicDate(1)">▶</button>
+                        </div>
+                        <div class="logs-actions">
+                            <button class="btn btn-primary" onclick="savePeriodic()">保存</button>
+                            <button class="btn btn-outline" style="color: #ff6b6b; border-color: #ff6b6b;" onclick="deletePeriodic()">删除</button>
+                            <div class="dropdown" onmouseenter="this.classList.add('open')" onmouseleave="this.classList.remove('open')" onclick="this.classList.toggle('open')">
+                                <button class="btn btn-outline dropdown-toggle">📤 导出/导入</button>
+                                <div class="dropdown-menu">
+                                    <a href="javascript:void(0)" onclick="exportPeriodic(); event.stopPropagation();">导出为 Markdown</a>
+                                    <div style="border-top: 1px solid var(--border-color); margin: 5px 0;"></div>
+                                    <a href="javascript:void(0)" onclick="document.getElementById('import-periodic-file').click(); event.stopPropagation();">从 Markdown 导入</a>
+                                    <input type="file" id="import-periodic-file" style="display: none;" accept=".md" onchange="importPeriodic(event)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 方法论折叠面板 -->
+                    <div class="methodology-panel" style="display: block;">
+                        <div class="methodology-header" onclick="togglePeriodicMethodology()">
+                            <span>📘 半年复盘方法论</span>
+                            <span id="periodic-methodology-icon">▼</span>
+                        </div>
+                        <div class="methodology-content" id="periodic-methodology-content" style="display: none;">
+                            <p><strong>系统复盘的核心心法：</strong> 回顾目标 → 确认结果 → 评估得失 → 重来演练 → 未来规划。</p>
+                            <p><strong>冰山模型：</strong> 知识/技能（水面上，易见） vs 价值观/性格特质/动机（水面下，深层驱动）。</p>
+                            <p><strong>做出好的选择：</strong> 大到未来工作方向，小到实践机会和人际关系的选择。需要“自我认知+树立稳定的价值观人生观+系统思考”。</p>
+                            <p><strong>常见卡点：</strong> 没有真正投入（浅尝辄止）、缺乏启动的勇气（害怕负反馈）、习惯闭门造车（遇到问题不会通过交流求助）。</p>
+                        </div>
+                    </div>
+
+                    <div class="logs-body" style="flex-grow: 1; overflow-y: auto;">
+                        <div class="log-field">
+                            <label>📌 1. 回顾目标</label>
+                            <div class="form-hint" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">冰山模型各维度能力成长期待是什么？当初想找到的实践机会或平台是什么样的？</div>
+                            <textarea id="periodic-goal" placeholder="写下你当初设定的目标..." oninput="autoSavePeriodic()"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>📊 2. 确认结果</label>
+                            <div class="form-hint" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">获得的实践机会/平台是否真的适合（能力成长机会、经验履历积累、个人工作体验）？能力成长是否符合预期（客观评估 vs 主观评估）？</div>
+                            <textarea id="periodic-result" placeholder="客观描述实际取得的结果..." oninput="autoSavePeriodic()"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>❌ 3. 评估得失（低于预期）</label>
+                            <div class="form-hint" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">哪些地方低于预期？为什么？（区分主客观原因，不要过度外部归因，也不要全怪自己）。</div>
+                            <textarea id="periodic-bad" placeholder="分析不足之处及深层原因..." oninput="autoSavePeriodic()"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>✅ 4. 评估得失（超预期）</label>
+                            <div class="form-hint" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">哪些地方超出预期？为什么？（尊重客观原因，重视主观能动性）。</div>
+                            <textarea id="periodic-good" placeholder="分析成功之处及可复用的经验..." oninput="autoSavePeriodic()"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>🔄 5. 重来演练</label>
+                            <div class="form-hint" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">明确哪个环节出了问题要调整（目标制定、平台选择、具体执行）。是否眼高手低？是否缺乏全力投入？是否遇到问题不求助？</div>
+                            <textarea id="periodic-rerun" placeholder="假设时光倒流，你的优化方案是..." oninput="autoSavePeriodic()"></textarea>
+                        </div>
+                        <div class="log-field">
+                            <label>📅 6. 未来规划</label>
+                            <div class="form-hint" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">目标设定（正推与反推平衡）。实践平台选择（是否变更）。具体执行（持续坚持学习-实践应用-交流分享-总结）。</div>
+                            <textarea id="periodic-plan" placeholder="制定下一步的行动计划..." oninput="autoSavePeriodic()"></textarea>
                         </div>
                     </div>
                 </div>
@@ -1440,6 +1534,7 @@
         initRecycleBin();
         initPomodoro();
         initMonthlyDB(); // 初始化月志DB
+        initPeriodicDB(); // 初始化半年复盘DB
         const stored = localStorage.getItem('efficiencyAppData');
         if (stored) {
             try {
@@ -1486,6 +1581,8 @@
             loadLog(currentLogDate);
         } else if (tabId === 'monthly') {
             loadMonthlyView();
+        } else if (tabId === 'periodic') {
+            loadPeriodicView();
         }
     }
 
@@ -2609,7 +2706,7 @@
         await loadMonthlyData(formatYearMonth(currentMonthlyDate));
     }
 
-    async function saveMonthly() {
+    async function saveMonthly(silent = false) {
         const yearMonthStr = formatYearMonth(currentMonthlyDate);
         const data = {
             yearMonth: yearMonthStr,
@@ -2624,11 +2721,19 @@
         
         try {
             await saveMonthlyReviewToDB(data);
-            alert('保存成功！');
+            if (!silent) alert('保存成功！');
             await renderMonthlyTree();
         } catch (e) {
-            alert('保存失败：' + e);
+            if (!silent) alert('保存失败：' + e);
         }
+    }
+
+    let monthlySaveTimeout = null;
+    function autoSaveMonthly() {
+        if (monthlySaveTimeout) clearTimeout(monthlySaveTimeout);
+        monthlySaveTimeout = setTimeout(() => {
+            saveMonthly(true);
+        }, 1000);
     }
 
     async function deleteMonthly() {
@@ -2834,6 +2939,343 @@
         reader.readAsText(file);
     }
 
+    // --- 半年复盘系统 (IndexedDB) ---
+    const PERIODIC_DB_NAME = 'PeriodicReviewsDB';
+    const PERIODIC_DB_VERSION = 1;
+    const PERIODIC_STORE_NAME = 'reviews';
+    let periodicDB = null;
+    let periodicDBPromise = null;
+
+    async function initPeriodicDB() {
+        if (periodicDB) return periodicDB;
+        if (periodicDBPromise) return periodicDBPromise;
+
+        periodicDBPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(PERIODIC_DB_NAME, PERIODIC_DB_VERSION);
+            request.onerror = (event) => reject(event.target.error);
+            request.onsuccess = (event) => {
+                periodicDB = event.target.result;
+                resolve(periodicDB);
+            };
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(PERIODIC_STORE_NAME)) {
+                    db.createObjectStore(PERIODIC_STORE_NAME, { keyPath: 'yearPeriod' });
+                }
+            };
+        });
+        return periodicDBPromise;
+    }
+
+    async function getPeriodicReview(yearPeriod) {
+        const db = await initPeriodicDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([PERIODIC_STORE_NAME], 'readonly');
+            const store = transaction.objectStore(PERIODIC_STORE_NAME);
+            const request = store.get(yearPeriod);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async function savePeriodicReviewToDB(data) {
+        const db = await initPeriodicDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([PERIODIC_STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(PERIODIC_STORE_NAME);
+            store.put(data);
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    async function deletePeriodicReviewFromDB(yearPeriod) {
+        const db = await initPeriodicDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([PERIODIC_STORE_NAME], 'readwrite');
+            const store = transaction.objectStore(PERIODIC_STORE_NAME);
+            store.delete(yearPeriod);
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    async function getAllPeriodicReviews() {
+        const db = await initPeriodicDB();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction([PERIODIC_STORE_NAME], 'readonly');
+            const store = transaction.objectStore(PERIODIC_STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // --- 半年复盘 UI 逻辑 ---
+    let currentPeriodicYear = new Date().getFullYear();
+    let currentPeriodicPeriod = new Date().getMonth() < 6 ? 'H1' : 'H2';
+
+    const PERIODIC_LABELS = {
+        'H1': '上半年',
+        'H2': '下半年'
+    };
+
+    function formatYearPeriodDisplay(yearPeriodStr) {
+        const [year, period] = yearPeriodStr.split('-');
+        return `${year}年 ${PERIODIC_LABELS[period] || period}`;
+    }
+
+    async function loadPeriodicView() {
+        await initPeriodicDB();
+        await renderPeriodicTree();
+        await loadPeriodicData(`${currentPeriodicYear}-${currentPeriodicPeriod}`);
+    }
+
+    async function loadPeriodicData(yearPeriodStr) {
+        const [year, period] = yearPeriodStr.split('-');
+        currentPeriodicYear = parseInt(year);
+        currentPeriodicPeriod = period;
+        document.getElementById('current-periodic-date').innerText = formatYearPeriodDisplay(yearPeriodStr);
+        
+        const data = await getPeriodicReview(yearPeriodStr);
+        if (data) {
+            document.getElementById('periodic-goal').value = data.goal || '';
+            document.getElementById('periodic-result').value = data.result || '';
+            document.getElementById('periodic-bad').value = data.bad || '';
+            document.getElementById('periodic-good').value = data.good || '';
+            document.getElementById('periodic-rerun').value = data.rerun || '';
+            document.getElementById('periodic-plan').value = data.plan || '';
+        } else {
+            document.getElementById('periodic-goal').value = '';
+            document.getElementById('periodic-result').value = '';
+            document.getElementById('periodic-bad').value = '';
+            document.getElementById('periodic-good').value = '';
+            document.getElementById('periodic-rerun').value = '';
+            document.getElementById('periodic-plan').value = '';
+        }
+        
+        await renderPeriodicTree();
+    }
+
+    async function changePeriodicDate(offset) {
+        let y = currentPeriodicYear;
+        let p = currentPeriodicPeriod;
+        
+        if (p.startsWith('H')) {
+            let num = parseInt(p[1]) + offset;
+            while (num > 2) { num -= 2; y++; }
+            while (num < 1) { num += 2; y--; }
+            p = `H${num}`;
+        }
+        
+        await loadPeriodicData(`${y}-${p}`);
+    }
+
+    async function savePeriodic(silent = false) {
+        const yearPeriodStr = `${currentPeriodicYear}-${currentPeriodicPeriod}`;
+        const data = {
+            yearPeriod: yearPeriodStr,
+            goal: document.getElementById('periodic-goal').value,
+            result: document.getElementById('periodic-result').value,
+            bad: document.getElementById('periodic-bad').value,
+            good: document.getElementById('periodic-good').value,
+            rerun: document.getElementById('periodic-rerun').value,
+            plan: document.getElementById('periodic-plan').value,
+            timestamp: Date.now()
+        };
+        
+        try {
+            await savePeriodicReviewToDB(data);
+            if (!silent) alert('保存成功！');
+            await renderPeriodicTree();
+        } catch (e) {
+            if (!silent) alert('保存失败：' + e);
+        }
+    }
+
+    let periodicSaveTimeout = null;
+    function autoSavePeriodic() {
+        if (periodicSaveTimeout) clearTimeout(periodicSaveTimeout);
+        periodicSaveTimeout = setTimeout(() => {
+            savePeriodic(true);
+        }, 1000);
+    }
+
+    async function deletePeriodic() {
+        const yearPeriodStr = `${currentPeriodicYear}-${currentPeriodicPeriod}`;
+        if (confirm(`确定要删除 ${formatYearPeriodDisplay(yearPeriodStr)} 的复盘吗？`)) {
+            try {
+                await deletePeriodicReviewFromDB(yearPeriodStr);
+                alert('删除成功！');
+                
+                document.getElementById('periodic-goal').value = '';
+                document.getElementById('periodic-result').value = '';
+                document.getElementById('periodic-bad').value = '';
+                document.getElementById('periodic-good').value = '';
+                document.getElementById('periodic-rerun').value = '';
+                document.getElementById('periodic-plan').value = '';
+                
+                await renderPeriodicTree();
+            } catch (e) {
+                alert('删除失败：' + e);
+            }
+        }
+    }
+
+    let periodicNavData = {};
+
+    async function renderPeriodicTree() {
+        const reviews = await getAllPeriodicReviews();
+        periodicNavData = {};
+        
+        reviews.forEach(r => {
+            const [year, period] = r.yearPeriod.split('-');
+            if (!periodicNavData[year]) periodicNavData[year] = [];
+            if (!periodicNavData[year].includes(period)) {
+                periodicNavData[year].push(period);
+            }
+        });
+        
+        const currentYearStr = currentPeriodicYear.toString();
+        if (!periodicNavData[currentYearStr]) periodicNavData[currentYearStr] = [];
+        if (!periodicNavData[currentYearStr].includes(currentPeriodicPeriod)) {
+            periodicNavData[currentYearStr].push(currentPeriodicPeriod);
+        }
+        
+        const yearSelect = document.getElementById('periodic-year-select');
+        const periodSelect = document.getElementById('periodic-period-select');
+        if (!yearSelect || !periodSelect) return;
+        
+        const years = Object.keys(periodicNavData).sort((a, b) => parseInt(b) - parseInt(a));
+        
+        yearSelect.innerHTML = '';
+        yearSelect.disabled = false;
+        years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.innerText = `${year}年`;
+            yearSelect.appendChild(option);
+        });
+        
+        if (years.includes(currentYearStr)) {
+            yearSelect.value = currentYearStr;
+        } else {
+            yearSelect.value = years[0];
+        }
+        
+        updatePeriodicPeriodDropdown(false);
+    }
+
+    function updatePeriodicPeriodDropdown(triggerLoad = true) {
+        const yearSelect = document.getElementById('periodic-year-select');
+        const periodSelect = document.getElementById('periodic-period-select');
+        const selectedYear = yearSelect.value;
+        
+        periodSelect.innerHTML = '';
+        if (!selectedYear || !periodicNavData[selectedYear]) {
+            periodSelect.innerHTML = '<option value="">-</option>';
+            periodSelect.disabled = true;
+            return;
+        }
+        
+        periodSelect.disabled = false;
+        
+        const allPeriods = ['H1', 'H2'];
+        
+        allPeriods.forEach(period => {
+            const option = document.createElement('option');
+            option.value = period;
+            const isSaved = periodicNavData[selectedYear].includes(period);
+            option.innerText = `${PERIODIC_LABELS[period]}${isSaved ? ' (已存)' : ''}`;
+            periodSelect.appendChild(option);
+        });
+        
+        const currentYearStr = currentPeriodicYear.toString();
+        
+        if (selectedYear === currentYearStr) {
+            periodSelect.value = currentPeriodicPeriod;
+        } else {
+            const savedPeriods = periodicNavData[selectedYear];
+            periodSelect.value = savedPeriods.length > 0 ? savedPeriods[0] : 'H1';
+        }
+        
+        if (triggerLoad && periodSelect.value) {
+            loadPeriodicData(`${selectedYear}-${periodSelect.value}`);
+        }
+    }
+
+    function onPeriodicYearChange() {
+        updatePeriodicPeriodDropdown(true);
+    }
+
+    function onPeriodicPeriodChange() {
+        const year = document.getElementById('periodic-year-select').value;
+        const period = document.getElementById('periodic-period-select').value;
+        if (year && period) {
+            loadPeriodicData(`${year}-${period}`);
+        }
+    }
+
+    function togglePeriodicMethodology() {
+        const content = document.getElementById('periodic-methodology-content');
+        const icon = document.getElementById('periodic-methodology-icon');
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.innerText = '▲';
+        } else {
+            content.style.display = 'none';
+            icon.innerText = '▼';
+        }
+    }
+
+    function exportPeriodic() {
+        const yearPeriodStr = `${currentPeriodicYear}-${currentPeriodicPeriod}`;
+        const goal = document.getElementById('periodic-goal').value;
+        const result = document.getElementById('periodic-result').value;
+        const bad = document.getElementById('periodic-bad').value;
+        const good = document.getElementById('periodic-good').value;
+        const rerun = document.getElementById('periodic-rerun').value;
+        const plan = document.getElementById('periodic-plan').value;
+        
+        const mdContent = `# ${formatYearPeriodDisplay(yearPeriodStr)} 半年复盘\n\n## 1. 回顾目标\n${goal}\n\n## 2. 确认结果\n${result}\n\n## 3. 评估得失（低于预期）\n${bad}\n\n## 4. 评估得失（超预期）\n${good}\n\n## 5. 重来演练\n${rerun}\n\n## 6. 未来规划\n${plan}\n`;
+        
+        const blob = new Blob([mdContent], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `半年复盘_${yearPeriodStr}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importPeriodic(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            
+            const goalMatch = text.match(/## 1\. 回顾目标\n([\s\S]*?)(?=\n## 2\. 确认结果|\n## 3\.|\n## 4\.|\n## 5\.|\n## 6\.|$)/);
+            const resultMatch = text.match(/## 2\. 确认结果\n([\s\S]*?)(?=\n## 3\.|\n## 4\.|\n## 5\.|\n## 6\.|$)/);
+            const badMatch = text.match(/## 3\. 评估得失（低于预期）\n([\s\S]*?)(?=\n## 4\.|\n## 5\.|\n## 6\.|$)/);
+            const goodMatch = text.match(/## 4\. 评估得失（超预期）\n([\s\S]*?)(?=\n## 5\.|\n## 6\.|$)/);
+            const rerunMatch = text.match(/## 5\. 重来演练\n([\s\S]*?)(?=\n## 6\.|$)/);
+            const planMatch = text.match(/## 6\. 未来规划\n([\s\S]*?)$/);
+            
+            if (goalMatch) document.getElementById('periodic-goal').value = goalMatch[1].trim();
+            if (resultMatch) document.getElementById('periodic-result').value = resultMatch[1].trim();
+            if (badMatch) document.getElementById('periodic-bad').value = badMatch[1].trim();
+            if (goodMatch) document.getElementById('periodic-good').value = goodMatch[1].trim();
+            if (rerunMatch) document.getElementById('periodic-rerun').value = rerunMatch[1].trim();
+            if (planMatch) document.getElementById('periodic-plan').value = planMatch[1].trim();
+            
+            alert('导入成功！请记得点击保存。');
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // reset
+    }
+
     window.onload = initData;
 
     // --- 日志系统 (IndexedDB) ---
@@ -2911,7 +3353,7 @@
         });
     }
 
-    async function saveLog() {
+    async function saveLog(silent = false) {
         const data = {
             date: currentLogDate,
             happy: document.getElementById('log-happy').value,
@@ -2931,12 +3373,20 @@
                 request.onerror = (e) => reject(e.target.error);
             });
             
-            alert('保存成功！');
+            if (!silent) alert('保存成功！');
             await renderLogsTree();
         } catch (e) {
             console.error('保存失败:', e);
-            alert('保存失败，请重试');
+            if (!silent) alert('保存失败，请重试');
         }
+    }
+
+    let logSaveTimeout = null;
+    function autoSaveLog() {
+        if (logSaveTimeout) clearTimeout(logSaveTimeout);
+        logSaveTimeout = setTimeout(() => {
+            saveLog(true);
+        }, 1000);
     }
 
     async function deleteLog() {
