@@ -914,6 +914,63 @@
                 justify-content: center;
             }
         }
+        /* Auth Screen */
+        .auth-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+        .auth-card {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px var(--card-shadow);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .auth-card h1 {
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+        .auth-card p {
+            color: var(--text-muted);
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-main);
+            box-sizing: border-box;
+        }
+        .auth-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .auth-buttons button {
+            flex: 1;
+            padding: 12px;
+        }
+        .auth-skip {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            cursor: pointer;
+            text-decoration: underline;
+        }
     </style>
     <!-- 引入 mammoth.js 用于解析 docx 文件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -921,9 +978,61 @@
     <!-- 引入 mobile-drag-drop polyfill 以支持移动端拖拽 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/default.css">
     <script src="https://cdn.jsdelivr.net/npm/mobile-drag-drop@2.3.0-rc.2/index.min.js"></script>
-    <script type="module" src="/src/firebase.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDk-kL4lVyMUJDlzXzK7kt99WIl-SaLJBI",
+            authDomain: "productivity-tools-ff028.firebaseapp.com",
+            projectId: "productivity-tools-ff028",
+            storageBucket: "productivity-tools-ff028.firebasestorage.app",
+            messagingSenderId: "905834631712",
+            appId: "1:905834631712:web:2b5edc9f1cc0fcf8a6a245",
+            measurementId: "G-CTJCBQNNK1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+        window.firebaseMethods = {
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            onAuthStateChanged,
+            signOut,
+            doc,
+            setDoc,
+            getDoc,
+            collection,
+            getDocs
+        };
+
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
 </head>
 <body>
+
+<div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+        <div style="font-size: 3rem; margin-bottom: 15px;">🚀</div>
+        <h1>效率工具箱</h1>
+        <p>登录以开启云端同步，或在本地直接使用</p>
+        
+        <input type="email" id="main-auth-email" class="auth-input" placeholder="邮箱地址">
+        <input type="password" id="main-auth-password" class="auth-input" placeholder="密码 (至少6位)">
+        
+        <div class="auth-buttons">
+            <button class="btn btn-primary" onclick="handleMainLogin()">登录</button>
+            <button class="btn btn-outline" onclick="handleMainRegister()">注册</button>
+        </div>
+        
+        <div class="auth-skip" onclick="skipAuth()">暂不登录，仅在本地使用</div>
+    </div>
+</div>
 
 <div class="app-container">
     <!-- 左侧导航 -->
@@ -955,7 +1064,7 @@
         </button>
         <div class="spacer"></div>
         <div class="reset-btn-container" style="margin-bottom: 10px;">
-            <button class="btn btn-outline" style="color: var(--primary-color); border-color: var(--primary-color);" onclick="openAuthModal()" id="auth-btn">☁️ 云端同步</button>
+            <button class="btn btn-outline" style="color: var(--primary-color); border-color: var(--primary-color);" onclick="openAuthModal()" id="auth-btn">👤 账号</button>
         </div>
         <div class="reset-btn-container">
             <button class="btn btn-outline" onclick="resetData()">↺ 重置为示例</button>
@@ -3325,14 +3434,20 @@
 
     // --- Firebase 逻辑 ---
     let currentUser = null;
+    let isAuthSkipped = false;
 
     window.addEventListener('firebase-ready', () => {
         const { onAuthStateChanged } = window.firebaseMethods;
         onAuthStateChanged(window.firebaseAuth, (user) => {
             currentUser = user;
             const authBtn = document.getElementById('auth-btn');
+            const authScreen = document.getElementById('auth-screen');
+            
             if (user) {
-                authBtn.innerText = '☁️ 已登录同步';
+                authScreen.style.opacity = '0';
+                setTimeout(() => authScreen.style.display = 'none', 300);
+
+                authBtn.innerText = '👤 ' + user.email.split('@')[0];
                 authBtn.style.background = 'var(--primary-color)';
                 authBtn.style.color = 'white';
                 document.getElementById('auth-form-container').style.display = 'none';
@@ -3340,7 +3455,12 @@
                 document.getElementById('auth-current-user').innerText = user.email;
                 document.getElementById('auth-title').innerText = '云端同步管理';
             } else {
-                authBtn.innerText = '☁️ 云端同步';
+                if (!isAuthSkipped) {
+                    authScreen.style.display = 'flex';
+                    authScreen.style.opacity = '1';
+                }
+
+                authBtn.innerText = '👤 未登录';
                 authBtn.style.background = 'transparent';
                 authBtn.style.color = 'var(--primary-color)';
                 document.getElementById('auth-form-container').style.display = 'block';
@@ -3349,6 +3469,41 @@
             }
         });
     });
+
+    function skipAuth() {
+        isAuthSkipped = true;
+        const authScreen = document.getElementById('auth-screen');
+        authScreen.style.opacity = '0';
+        setTimeout(() => authScreen.style.display = 'none', 300);
+    }
+
+    async function handleMainRegister() {
+        const email = document.getElementById('main-auth-email').value;
+        const password = document.getElementById('main-auth-password').value;
+        if (!email || !password) return alert('请输入邮箱和密码');
+        
+        try {
+            const { createUserWithEmailAndPassword } = window.firebaseMethods;
+            await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
+            alert('注册成功！');
+        } catch (error) {
+            alert('注册失败: ' + error.message);
+        }
+    }
+
+    async function handleMainLogin() {
+        const email = document.getElementById('main-auth-email').value;
+        const password = document.getElementById('main-auth-password').value;
+        if (!email || !password) return alert('请输入邮箱和密码');
+        
+        try {
+            const { signInWithEmailAndPassword } = window.firebaseMethods;
+            await signInWithEmailAndPassword(window.firebaseAuth, email, password);
+            alert('登录成功！');
+        } catch (error) {
+            alert('登录失败: ' + error.message);
+        }
+    }
 
     function openAuthModal() {
         document.getElementById('auth-modal').style.display = 'flex';
