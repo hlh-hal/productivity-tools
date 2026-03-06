@@ -971,6 +971,42 @@
             cursor: pointer;
             text-decoration: underline;
         }
+        
+        /* Top Right Actions */
+        .top-right-actions {
+            position: fixed;
+            top: 20px;
+            right: 40px;
+            z-index: 1000;
+        }
+        @media (max-width: 768px) {
+            .top-right-actions {
+                top: 15px;
+                right: 15px;
+            }
+        }
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .user-avatar:hover {
+            transform: scale(1.05);
+        }
+        .default-avatar {
+            background-color: var(--text-muted);
+        }
     </style>
     <!-- 引入 mammoth.js 用于解析 docx 文件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
@@ -1035,6 +1071,13 @@
 </div>
 
 <div class="app-container">
+    <!-- Top Right Actions -->
+    <div class="top-right-actions">
+        <div id="user-avatar-container" onclick="openAuthModal()" title="云端同步管理">
+            <div class="user-avatar default-avatar">👤</div>
+        </div>
+    </div>
+
     <!-- 左侧导航 -->
     <div class="sidebar">
         <div class="sidebar-title">
@@ -1063,12 +1106,6 @@
             <span>🍅</span> 番茄钟
         </button>
         <div class="spacer"></div>
-        <div class="reset-btn-container" style="margin-bottom: 10px;">
-            <button class="btn btn-outline" style="color: var(--primary-color); border-color: var(--primary-color);" onclick="openAuthModal()" id="auth-btn">👤 账号</button>
-        </div>
-        <div class="reset-btn-container">
-            <button class="btn btn-outline" onclick="resetData()">↺ 重置为示例</button>
-        </div>
     </div>
 
     <!-- 右侧内容 -->
@@ -3440,16 +3477,16 @@
         const { onAuthStateChanged } = window.firebaseMethods;
         onAuthStateChanged(window.firebaseAuth, (user) => {
             currentUser = user;
-            const authBtn = document.getElementById('auth-btn');
+            const avatarContainer = document.getElementById('user-avatar-container');
             const authScreen = document.getElementById('auth-screen');
             
             if (user) {
                 authScreen.style.opacity = '0';
                 setTimeout(() => authScreen.style.display = 'none', 300);
 
-                authBtn.innerText = '👤 ' + user.email.split('@')[0];
-                authBtn.style.background = 'var(--primary-color)';
-                authBtn.style.color = 'white';
+                const initial = user.email.charAt(0).toUpperCase();
+                avatarContainer.innerHTML = `<div class="user-avatar">${initial}</div>`;
+                
                 document.getElementById('auth-form-container').style.display = 'none';
                 document.getElementById('auth-user-container').style.display = 'block';
                 document.getElementById('auth-current-user').innerText = user.email;
@@ -3460,9 +3497,8 @@
                     authScreen.style.opacity = '1';
                 }
 
-                authBtn.innerText = '👤 未登录';
-                authBtn.style.background = 'transparent';
-                authBtn.style.color = 'var(--primary-color)';
+                avatarContainer.innerHTML = `<div class="user-avatar default-avatar">👤</div>`;
+                
                 document.getElementById('auth-form-container').style.display = 'block';
                 document.getElementById('auth-user-container').style.display = 'none';
                 document.getElementById('auth-title').innerText = '云端账号登录';
@@ -3560,11 +3596,11 @@
 
         try {
             const { doc, setDoc } = window.firebaseMethods;
-            const db = window.firebaseDb;
+            const firestoreDb = window.firebaseDb;
             const uid = currentUser.uid;
 
             // 1. 同步普通数据 (KISS, 四象限等)
-            await setDoc(doc(db, "users", uid), {
+            await setDoc(doc(firestoreDb, "users", uid), {
                 appData: JSON.stringify(appData),
                 lastSync: Date.now()
             });
@@ -3573,19 +3609,19 @@
             const allLogs = await getAllLogs();
             const logsData = {};
             allLogs.forEach(log => logsData[log.date] = log);
-            await setDoc(doc(db, "users", uid, "data", "logs"), { data: JSON.stringify(logsData) });
+            await setDoc(doc(firestoreDb, "users", uid, "data", "logs"), { data: JSON.stringify(logsData) });
 
             // 3. 同步月志
             const allMonthly = await getAllMonthlyReviews();
             const monthlyData = {};
             allMonthly.forEach(m => monthlyData[m.yearMonth] = m);
-            await setDoc(doc(db, "users", uid, "data", "monthly"), { data: JSON.stringify(monthlyData) });
+            await setDoc(doc(firestoreDb, "users", uid, "data", "monthly"), { data: JSON.stringify(monthlyData) });
 
             // 4. 同步半年复盘
             const allPeriodic = await getAllPeriodicReviews();
             const periodicData = {};
             allPeriodic.forEach(p => periodicData[p.yearPeriod] = p);
-            await setDoc(doc(db, "users", uid, "data", "periodic"), { data: JSON.stringify(periodicData) });
+            await setDoc(doc(firestoreDb, "users", uid, "data", "periodic"), { data: JSON.stringify(periodicData) });
 
             alert('同步到云端成功！');
         } catch (error) {
@@ -3608,31 +3644,33 @@
 
         try {
             const { doc, getDoc } = window.firebaseMethods;
-            const db = window.firebaseDb;
+            const firestoreDb = window.firebaseDb;
             const uid = currentUser.uid;
 
             // 1. 恢复普通数据
-            const userDoc = await getDoc(doc(db, "users", uid));
+            const userDoc = await getDoc(doc(firestoreDb, "users", uid));
             if (userDoc.exists() && userDoc.data().appData) {
                 appData = JSON.parse(userDoc.data().appData);
                 localStorage.setItem('efficiencyAppData', JSON.stringify(appData));
             }
 
             // 2. 恢复日志
-            const logsDoc = await getDoc(doc(db, "users", uid, "data", "logs"));
+            const logsDoc = await getDoc(doc(firestoreDb, "users", uid, "data", "logs"));
             if (logsDoc.exists() && logsDoc.data().data) {
                 const logsData = JSON.parse(logsDoc.data().data);
                 for (const key in logsData) {
-                    await new Promise((resolve) => {
-                        const transaction = window.db.transaction(['logs'], 'readwrite');
+                    await new Promise((resolve, reject) => {
+                        const transaction = db.transaction(['logs'], 'readwrite');
                         const store = transaction.objectStore('logs');
-                        store.put(logsData[key]).onsuccess = resolve;
+                        const request = store.put(logsData[key]);
+                        request.onsuccess = resolve;
+                        request.onerror = (e) => reject(e.target.error);
                     });
                 }
             }
 
             // 3. 恢复月志
-            const monthlyDoc = await getDoc(doc(db, "users", uid, "data", "monthly"));
+            const monthlyDoc = await getDoc(doc(firestoreDb, "users", uid, "data", "monthly"));
             if (monthlyDoc.exists() && monthlyDoc.data().data) {
                 const monthlyData = JSON.parse(monthlyDoc.data().data);
                 for (const key in monthlyData) {
@@ -3641,7 +3679,7 @@
             }
 
             // 4. 恢复半年复盘
-            const periodicDoc = await getDoc(doc(db, "users", uid, "data", "periodic"));
+            const periodicDoc = await getDoc(doc(firestoreDb, "users", uid, "data", "periodic"));
             if (periodicDoc.exists() && periodicDoc.data().data) {
                 const periodicData = JSON.parse(periodicDoc.data().data);
                 for (const key in periodicData) {
