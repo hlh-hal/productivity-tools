@@ -1545,6 +1545,27 @@
     </div>
 </div>
 
+    <!-- 导入预览弹窗 -->
+    <div id="import-preview-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>📥 导入预览</h3>
+                <button class="close-btn" onclick="closeImportPreviewModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: var(--text-muted);">成功解析出以下 <span id="import-preview-count" style="font-weight: bold; color: var(--primary-color);">0</span> 条日志：</p>
+                <div id="import-preview-list" style="max-height: 300px; overflow-y: auto; background: var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border-color);">
+                    <!-- 预览列表 -->
+                </div>
+                <p id="import-preview-error" style="color: #ff6b6b; font-size: 0.9rem; display: none; margin-bottom: 15px;">部分内容可能未被识别为有效日期，请检查原文件格式。</p>
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button class="btn btn-outline" onclick="closeImportPreviewModal()">取消</button>
+                    <button class="btn btn-primary" onclick="confirmImportLogs()">确认导入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 导出模块选择弹窗 -->
     <div id="export-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
@@ -3950,6 +3971,50 @@
     }
 
     // --- 导入逻辑 ---
+    let pendingImportLogs = [];
+
+    function openImportPreviewModal(logs) {
+        pendingImportLogs = logs;
+        document.getElementById('import-preview-count').innerText = logs.length;
+        const listContainer = document.getElementById('import-preview-list');
+        listContainer.innerHTML = '';
+        
+        if (logs.length === 0) {
+            listContainer.innerHTML = '<p style="color: var(--text-muted); text-align: center;">未找到有效日志</p>';
+            document.getElementById('import-preview-error').style.display = 'block';
+        } else {
+            document.getElementById('import-preview-error').style.display = 'none';
+            logs.forEach(log => {
+                const item = document.createElement('div');
+                item.style.padding = '8px';
+                item.style.borderBottom = '1px solid var(--border-color)';
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.innerHTML = `
+                    <span style="font-weight: bold;">${log.date}</span>
+                    <span style="color: var(--text-muted); font-size: 0.85rem;">原格式: ${log.rawDate}</span>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+        
+        document.getElementById('import-preview-modal').style.display = 'flex';
+    }
+
+    function closeImportPreviewModal() {
+        document.getElementById('import-preview-modal').style.display = 'none';
+        pendingImportLogs = [];
+    }
+
+    async function confirmImportLogs() {
+        if (pendingImportLogs.length > 0) {
+            await saveImportedLogs(pendingImportLogs);
+            closeImportPreviewModal();
+        } else {
+            alert('没有可导入的日志。');
+        }
+    }
+
     async function importLogs(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -4001,9 +4066,9 @@
 
                         const logs = parseTextToLogs(text);
                         if (logs.length > 0) {
-                            await saveImportedLogs(logs);
+                            openImportPreviewModal(logs);
                         } else {
-                            alert('未能从MD文件中解析出有效的日志格式。请确保包含# YYYY-MM-DD格式的日期。');
+                            alert('未能从MD文件中解析出有效的日志格式。请确保包含日期。');
                         }
                     } catch (error) {
                         console.error('MD导入失败:', error);
@@ -4020,9 +4085,9 @@
                         const text = result.value;
                         const logs = parseTextToLogs(text);
                         if (logs.length > 0) {
-                            await saveImportedLogs(logs);
+                            openImportPreviewModal(logs);
                         } else {
-                            alert('未能从DOCX文件中解析出有效的日志格式。请确保包含YYYY-MM-DD格式的日期。');
+                            alert('未能从DOCX文件中解析出有效的日志格式。请确保包含日期。');
                         }
                     } catch (error) {
                         console.error('DOCX导入失败:', error);
@@ -4036,27 +4101,54 @@
         }
     }
 
+    function parseFlexibleDate(line) {
+        line = line.trim();
+        // 提取第一个连续的4位数字作为年份，之后提取第一个连续的1-2位数字作为月份，再之后提取第一个连续的1-2位数字作为日期
+        const m = line.match(/(\d{4})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/);
+        if (m) {
+            const year = m[1];
+            const month = m[2].padStart(2, '0');
+            const day = m[3].padStart(2, '0');
+            
+            // 简单校验月份和日期范围
+            const monthInt = parseInt(month, 10);
+            const dayInt = parseInt(day, 10);
+            if (monthInt >= 1 && monthInt <= 12 && dayInt >= 1 && dayInt <= 31) {
+                return `${year}-${month}-${day}`;
+            }
+        }
+        return null;
+    }
+
     function parseTextToLogs(content) {
-        // 支持 # 2026-02-24 或 2026-02-24
-        const dateRegex = /(?:#\s*)?(\d{4}-\d{2}-\d{2})/g;
+        // 匹配可能包含日期的行（以可选的 # 和空格开头，包含 4位数字, 1-2位数字, 1-2位数字）
+        const dateLineRegex = /(?:^|\n)[ \t]*(?:#[ \t]*)?(\d{4}[^\d\n]*\d{1,2}[^\d\n]*\d{1,2}[^\n]*)(?=\n|$)/g;
+        
         let dates = [];
         let match;
-        while ((match = dateRegex.exec(content)) !== null) {
-            dates.push({
-                date: match[1],
-                index: match.index
-            });
+        while ((match = dateLineRegex.exec(content)) !== null) {
+            const rawLine = match[1].trim();
+            const parsedDate = parseFlexibleDate(rawLine);
+            if (parsedDate) {
+                dates.push({
+                    date: parsedDate,
+                    rawDate: rawLine,
+                    index: match.index,
+                    length: match[0].length
+                });
+            }
         }
         
         const logs = [];
         for (let i = 0; i !== dates.length; i++) {
             const current = dates[i];
-            const start = current.index + (match ? match[0].length : 10); // approximate length
+            const start = current.index + current.length;
             const end = (i + 1 !== dates.length) ? dates[i + 1].index : content.length;
             const textBlock = content.substring(start, end).trim();
             
             const logData = parseLogText(textBlock);
             logData.date = current.date;
+            logData.rawDate = current.rawDate;
             logs.push(logData);
         }
         return logs;
