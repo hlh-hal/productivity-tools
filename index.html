@@ -1049,6 +1049,11 @@
 
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
+    <!-- PDF.js for PDF import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
 </head>
 <body>
 
@@ -1136,8 +1141,8 @@
                                 <div class="dropdown-menu">
                                     <a href="javascript:void(0)" onclick="showExportModulesModal(); event.stopPropagation();">按模块导出 (MD)</a>
                                     <div style="border-top: 1px solid var(--border-color); margin: 5px 0;"></div>
-                                    <a href="javascript:void(0)" onclick="document.getElementById('import-file').click(); event.stopPropagation();">导入日志 (MD/DOCX)</a>
-                                    <input type="file" id="import-file" style="display: none;" accept=".md,.docx" onchange="importLogs(event)">
+                                    <a href="javascript:void(0)" onclick="document.getElementById('import-file').click(); event.stopPropagation();">导入日志 (MD/DOCX/PDF/TXT)</a>
+                                    <input type="file" id="import-file" style="display: none;" accept=".md,.docx,.pdf,.txt" onchange="importLogs(event)">
                                 </div>
                             </div>
                         </div>
@@ -4020,12 +4025,44 @@
         if (!file) return;
 
         try {
-            if (file.name.endsWith('.md')) {
+            if (file.name.endsWith('.md') || file.name.endsWith('.txt')) {
                 const reader = new FileReader();
                 reader.onload = async (e) => {
                     try {
                         const arrayBuffer = e.target.result;
                         const uint8Array = new Uint8Array(arrayBuffer);
+                        
+                        // 检查是否是伪装成 MD/TXT 的 PDF 文件 (PDF文件头: %PDF-)
+                        if (uint8Array.length > 5 && 
+                            uint8Array[0] === 0x25 && uint8Array[1] === 0x50 && 
+                            uint8Array[2] === 0x44 && uint8Array[3] === 0x46 && uint8Array[4] === 0x2D) {
+                            
+                            // 按照 PDF 逻辑处理
+                            const pdf = await pdfjsLib.getDocument(uint8Array).promise;
+                            let text = '';
+                            for (let i = 1; i <= pdf.numPages; i++) {
+                                const page = await pdf.getPage(i);
+                                const content = await page.getTextContent();
+                                let lastY = -1;
+                                content.items.forEach(item => {
+                                    if (lastY !== item.transform[5]) {
+                                        if (lastY !== -1) text += '\n';
+                                        lastY = item.transform[5];
+                                    } else {
+                                        text += ' ';
+                                    }
+                                    text += item.str;
+                                });
+                                text += '\n';
+                            }
+                            const logs = parseTextToLogs(text);
+                            if (logs.length > 0) {
+                                openImportPreviewModal(logs);
+                            } else {
+                                alert('未能从伪装的PDF文件中解析出有效的日志格式。请确保包含日期。');
+                            }
+                            return;
+                        }
                         
                         // 简单的编码检测：判断是否为 UTF-8
                         let isUtf8 = true;
@@ -4068,7 +4105,7 @@
                         if (logs.length > 0) {
                             openImportPreviewModal(logs);
                         } else {
-                            alert('未能从MD文件中解析出有效的日志格式。请确保包含日期。');
+                            alert('未能从文件中解析出有效的日志格式。请确保包含日期。');
                         }
                     } catch (error) {
                         console.error('MD导入失败:', error);
@@ -4092,6 +4129,40 @@
                     } catch (error) {
                         console.error('DOCX导入失败:', error);
                         alert('导入失败，无法解析DOCX文件。');
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else if (file.name.endsWith('.pdf')) {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    try {
+                        const typedarray = new Uint8Array(e.target.result);
+                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                        let text = '';
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const content = await page.getTextContent();
+                            let lastY = -1;
+                            content.items.forEach(item => {
+                                if (lastY !== item.transform[5]) {
+                                    if (lastY !== -1) text += '\n';
+                                    lastY = item.transform[5];
+                                } else {
+                                    text += ' ';
+                                }
+                                text += item.str;
+                            });
+                            text += '\n';
+                        }
+                        const logs = parseTextToLogs(text);
+                        if (logs.length > 0) {
+                            openImportPreviewModal(logs);
+                        } else {
+                            alert('未能从PDF文件中解析出有效的日志格式。请确保包含日期。');
+                        }
+                    } catch (error) {
+                        console.error('PDF导入失败:', error);
+                        alert('导入失败，无法解析PDF文件。');
                     }
                 };
                 reader.readAsArrayBuffer(file);
@@ -4122,7 +4193,7 @@
 
     function parseTextToLogs(content) {
         // 匹配可能包含日期的行（以可选的 # 和空格开头，包含 4位数字, 1-2位数字, 1-2位数字）
-        const dateLineRegex = /(?:^|\n)[ \t]*(?:#[ \t]*)?(\d{4}[^\d\n]*\d{1,2}[^\d\n]*\d{1,2}[^\n]*)(?=\n|$)/g;
+        const dateLineRegex = /(?:^|\n)[ \t]*(?:#+[ \t]*)?(\d{4}[^\d\n]*\d{1,2}[^\d\n]*\d{1,2}[^\n]*)(?=\n|$)/g;
         
         let dates = [];
         let match;
@@ -4158,11 +4229,11 @@
         const logData = { happy: '', fulfilling: '', grateful: '', improve: '', thoughts: '' };
         
         const keywords = [
-            { key: 'happy', regex: /(?:-\s*\*\*开心的事\*\*[：:]|开心的事\s*[：:]|【[^】]*开心[^】]*】)\s*/ },
-            { key: 'fulfilling', regex: /(?:-\s*\*\*充实的事\*\*[：:]|充实的事\s*[：:]|【[^】]*充实[^】]*】)\s*/ },
-            { key: 'improve', regex: /(?:-\s*\*\*改进的事\*\*[：:]|改进的事\s*[：:]|【[^】]*改进[^】]*】)\s*/ },
-            { key: 'grateful', regex: /(?:-\s*\*\*感谢的人\*\*[：:]|感谢的人\s*[：:]|【[^】]*感谢[^】]*】)\s*/ },
-            { key: 'thoughts', regex: /(?:-\s*\*\*今日思考\*\*[：:]|今日思考\s*[：:]|【[^】]*思考[^】]*】)\s*/ }
+            { key: 'happy', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:\*\*)?开心的事(?:\*\*)?\s*[：:]|【[^】]*开心[^】]*】)\s*/ },
+            { key: 'fulfilling', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:\*\*)?充实的事(?:\*\*)?\s*[：:]|【[^】]*充实[^】]*】)\s*/ },
+            { key: 'improve', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:\*\*)?改进的事(?:\*\*)?\s*[：:]|【[^】]*改进[^】]*】)\s*/ },
+            { key: 'grateful', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:\*\*)?感谢的人(?:\*\*)?\s*[：:]|【[^】]*感谢[^】]*】)\s*/ },
+            { key: 'thoughts', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:\*\*)?今日思考(?:\*\*)?\s*[：:]|【[^】]*思考[^】]*】)\s*/ }
         ];
 
         let matches = [];
