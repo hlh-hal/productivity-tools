@@ -4043,15 +4043,30 @@
                             for (let i = 1; i <= pdf.numPages; i++) {
                                 const page = await pdf.getPage(i);
                                 const content = await page.getTextContent();
+                                
+                                // 对 PDF 文本块进行排序：按 Y 坐标降序（从上到下），再按 X 坐标升序（从左到右）
+                                const items = content.items.sort((a, b) => {
+                                    const yA = a.transform[5];
+                                    const yB = b.transform[5];
+                                    const xA = a.transform[4];
+                                    const xB = b.transform[4];
+                                    
+                                    // 如果 Y 坐标差异在 5 以内，认为是同一行
+                                    if (Math.abs(yA - yB) > 5) {
+                                        return yB - yA;
+                                    }
+                                    return xA - xB;
+                                });
+
                                 let lastY = -1;
-                                content.items.forEach(item => {
-                                    if (lastY !== item.transform[5]) {
-                                        if (lastY !== -1) text += '\n';
-                                        lastY = item.transform[5];
-                                    } else {
+                                items.forEach(item => {
+                                    if (lastY !== -1 && Math.abs(lastY - item.transform[5]) > 5) {
+                                        text += '\n';
+                                    } else if (lastY !== -1) {
                                         text += ' ';
                                     }
                                     text += item.str;
+                                    lastY = item.transform[5];
                                 });
                                 text += '\n';
                             }
@@ -4142,15 +4157,30 @@
                         for (let i = 1; i <= pdf.numPages; i++) {
                             const page = await pdf.getPage(i);
                             const content = await page.getTextContent();
+                            
+                            // 对 PDF 文本块进行排序：按 Y 坐标降序（从上到下），再按 X 坐标升序（从左到右）
+                            const items = content.items.sort((a, b) => {
+                                const yA = a.transform[5];
+                                const yB = b.transform[5];
+                                const xA = a.transform[4];
+                                const xB = b.transform[4];
+                                
+                                // 如果 Y 坐标差异在 5 以内，认为是同一行
+                                if (Math.abs(yA - yB) > 5) {
+                                    return yB - yA;
+                                }
+                                return xA - xB;
+                            });
+
                             let lastY = -1;
-                            content.items.forEach(item => {
-                                if (lastY !== item.transform[5]) {
-                                    if (lastY !== -1) text += '\n';
-                                    lastY = item.transform[5];
-                                } else {
+                            items.forEach(item => {
+                                if (lastY !== -1 && Math.abs(lastY - item.transform[5]) > 5) {
+                                    text += '\n';
+                                } else if (lastY !== -1) {
                                     text += ' ';
                                 }
                                 text += item.str;
+                                lastY = item.transform[5];
                             });
                             text += '\n';
                         }
@@ -4229,11 +4259,11 @@
         const logData = { happy: '', fulfilling: '', grateful: '', improve: '', thoughts: '' };
         
         const keywords = [
-            { key: 'happy', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:\*\*)?开心的事(?:\*\*)?\s*[：:]|【[^】]*开心[^】]*】)\s*/ },
-            { key: 'fulfilling', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:\*\*)?充实的事(?:\*\*)?\s*[：:]|【[^】]*充实[^】]*】)\s*/ },
-            { key: 'improve', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:\*\*)?改进的事(?:\*\*)?\s*[：:]|【[^】]*改进[^】]*】)\s*/ },
-            { key: 'grateful', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:\*\*)?感谢的人(?:\*\*)?\s*[：:]|【[^】]*感谢[^】]*】)\s*/ },
-            { key: 'thoughts', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:\*\*)?今日思考(?:\*\*)?\s*[：:]|【[^】]*思考[^】]*】)\s*/ }
+            { key: 'happy', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:[^\w\s\u4e00-\u9fa5]*)\s*(?:\*\*)?开心的事(?:\*\*)?\s*[：:]|【[^】]*开心[^】]*】)/ },
+            { key: 'fulfilling', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:[^\w\s\u4e00-\u9fa5]*)\s*(?:\*\*)?充实的事(?:\*\*)?\s*[：:]|【[^】]*充实[^】]*】)/ },
+            { key: 'improve', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:[^\w\s\u4e00-\u9fa5]*)\s*(?:\*\*)?改进的事(?:\*\*)?\s*[：:]|【[^】]*改进[^】]*】)/ },
+            { key: 'grateful', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:[^\w\s\u4e00-\u9fa5]*)\s*(?:\*\*)?感谢的人(?:\*\*)?\s*[：:]|【[^】]*感谢[^】]*】)/ },
+            { key: 'thoughts', regex: /(?:^|\n)[ \t]*(?:(?:#+|-)[ \t]*)?(?:(?:[^\w\s\u4e00-\u9fa5]*)\s*(?:\*\*)?今日思考(?:\*\*)?\s*[：:]|【[^】]*思考[^】]*】)/ }
         ];
 
         let matches = [];
